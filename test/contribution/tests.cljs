@@ -156,45 +156,82 @@
      (async done (js/setTimeout #(done) 0)))                ; Prevents from hanging between tests, don't ask me why
    })
 
-#_(deftest contracts-setup
-    (is Contribution)
-    (is D0xToken)
-    (is (= (aget D0xToken "address") (contract-call Contribution :d0x-token)))
-    (is (= (account WALLET) (contract-call Contribution :wallet)))
-    (is (= (account FOUNDER1) (contract-call Contribution :founder1)))
-    (is (= (account FOUNDER2) (contract-call Contribution :founder2)))
-    (is (= (account EARLY_SPONSOR) (contract-call Contribution :early-sponsor)))
-    (is (= (account ADVISER1) (contract-call Contribution :adviser1)))
-    (is (= (account ADVISER2) (contract-call Contribution :adviser2)))
-    (is (= (account ADVISER3) (contract-call Contribution :adviser3)))
-    (is (= (account ADVISER4) (contract-call Contribution :adviser4)))
-    (is (= (account OWNER1) (contract-call Contribution :get-owner 1)))
-    (is (= (account OWNER2) (contract-call Contribution :get-owner 2)))
-    (is (= 250000000 (to-ether (contract-call D0xToken :total-supply))))
-    (is (= 35000000 (account-d0x-balance FOUNDER1)))
-    (is (= 10000000 (account-d0x-balance FOUNDER2)))
-    (is (= 0 (account-d0x-balance WALLET)))
-    (is (= 5000000 (account-d0x-balance EARLY_SPONSOR)))
-    (is (= 1250000 (account-d0x-balance ADVISER1)))
-    (is (= 1250000 (account-d0x-balance ADVISER2)))
-    (is (= 1250000 (account-d0x-balance ADVISER3)))
-    (is (= 1250000 (account-d0x-balance ADVISER4)))
-    (is (= 1250000 (account-d0x-balance ADVISER4)))
-    (is (= 195000000 (d0x-balance-of (aget Contribution "address")))))
+(deftest contracts-setup
+  (is Contribution)
+  (is D0xToken)
+  (is (= (aget D0xToken "address") (contract-call Contribution :d0x-token)))
+  (is (= (account WALLET) (contract-call Contribution :wallet)))
+  (is (= (account FOUNDER1) (contract-call Contribution :founder1)))
+  (is (= (account FOUNDER2) (contract-call Contribution :founder2)))
+  (is (= (account EARLY_SPONSOR) (contract-call Contribution :early-sponsor)))
+  (is (= (account ADVISER1) (contract-call Contribution :adviser1)))
+  (is (= (account ADVISER2) (contract-call Contribution :adviser2)))
+  (is (= (account ADVISER3) (contract-call Contribution :adviser3)))
+  (is (= (account ADVISER4) (contract-call Contribution :adviser4)))
+  (is (= (account OWNER1) (contract-call Contribution :get-owner 1)))
+  (is (= (account OWNER2) (contract-call Contribution :get-owner 2)))
+  (is (= 250000000 (to-ether (contract-call D0xToken :total-supply))))
+  (is (= 0 (account-d0x-balance FOUNDER1)))
+  (is (= 0 (account-d0x-balance FOUNDER2)))
+  (is (= 0 (account-d0x-balance WALLET)))
+  (is (= 0 (account-d0x-balance EARLY_SPONSOR)))
+  (is (= 0 (account-d0x-balance ADVISER1)))
+  (is (= 0 (account-d0x-balance ADVISER2)))
+  (is (= 0 (account-d0x-balance ADVISER3)))
+  (is (= 0 (account-d0x-balance ADVISER4)))
+  (is (= 0 (account-d0x-balance ADVISER4)))
+  (is (= 250000000 (d0x-balance-of (aget Contribution "address")))))
 
 (deftest contribution1
   (testing "Shouldn't be able to contribute when contribution period is not running"
     (is (thrown? js/Error (state-call! Contribution :contribute 10 1 (account 10)))))
 
+
   (let [soft-cap-amount (to-wei 10)
         after-soft-cap-duration (time/in-seconds (time/hours 48))
-        start-time (now-plus-seconds 2)
-        end-time (now-plus-seconds 4)
+        start-time (now-plus-seconds 4)
+        end-time (now-plus-seconds 8)
         wait-ch (chan)]
     (testing "Should be able to set contribution period"
       (state-call! Contribution :set-contrib-period OWNER1 0 0 soft-cap-amount after-soft-cap-duration start-time end-time)
       (is (= [soft-cap-amount after-soft-cap-duration start-time end-time false false false 0 []]
-             (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0))))))
+             (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0)))))
+
+      (is (= 35000000 (account-d0x-balance FOUNDER1)))
+      (is (= 10000000 (account-d0x-balance FOUNDER2)))
+      (is (= 5000000 (account-d0x-balance EARLY_SPONSOR)))
+      (is (= 1250000 (account-d0x-balance ADVISER1)))
+      (is (= 1250000 (account-d0x-balance ADVISER2)))
+      (is (= 1250000 (account-d0x-balance ADVISER3)))
+      (is (= 1250000 (account-d0x-balance ADVISER4)))
+      (is (= 1250000 (account-d0x-balance ADVISER4)))
+      (is (= 195000000 (d0x-balance-of (aget Contribution "address")))))
+
+    (testing "Token grants are setup okay"
+      (doseq [account-index [FOUNDER1 FOUNDER2 EARLY_SPONSOR ADVISER1 ADVISER2 ADVISER3 ADVISER4]]
+        (is (eq? (contract-call D0xToken :token-grants-count (account FOUNDER1)) 1))
+        (let [[granter amount vested-amount start-date cliff-date vesting-date]
+              (contract-call D0xToken :token-grant (account FOUNDER1) 0)]
+          (is (= granter (aget Contribution "address")))
+          (eq? vested-amount 0))))
+
+    (testing "Setting first contrib period again will keep correct d0x balances"
+      (state-call! Contribution :set-contrib-period OWNER1 0 0 soft-cap-amount after-soft-cap-duration start-time end-time)
+      (is (= [soft-cap-amount after-soft-cap-duration start-time end-time false false false 0 []]
+             (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0)))))
+
+      (is (= 35000000 (account-d0x-balance FOUNDER1)))
+      (is (= 10000000 (account-d0x-balance FOUNDER2)))
+      (is (= 5000000 (account-d0x-balance EARLY_SPONSOR)))
+      (is (= 1250000 (account-d0x-balance ADVISER1)))
+      (is (= 1250000 (account-d0x-balance ADVISER2)))
+      (is (= 1250000 (account-d0x-balance ADVISER3)))
+      (is (= 1250000 (account-d0x-balance ADVISER4)))
+      (is (= 1250000 (account-d0x-balance ADVISER4)))
+      (is (= 195000000 (d0x-balance-of (aget Contribution "address")))))
+
+    (testing "Vesting works"
+      (is (thrown? js/Error (state-call! D0xToken :transfer FOUNDER1 0 (account FOUNDER2) (to-wei 1)))))
 
     (testing "Only one owner shouldn't be able to enable contribution period"
       (state-call! Contribution :enable-contrib-period OWNER1 0 0)
@@ -209,9 +246,12 @@
 
     (async done
       (go
-        (wait 2 wait-ch)
+        (wait 4 wait-ch)
         (<! wait-ch)
         (mine-block)
+
+        (testing "Contrib period 1 is running"
+          (is (contrib-period-running?)))
 
         (testing "Contribution round 1"
           (let [wallet-balance-before (account-eth-balance WALLET)
@@ -242,7 +282,7 @@
             (testing "Shouldn't be able to compensate when contrib period is still running"
               (is (thrown? js/Error (state-call! Contribution :compensate-contributors OWNER1 0 0 10))))
 
-            (wait 2 wait-ch)
+            (wait 4 wait-ch)
             (<! wait-ch)
             (mine-block)
 
@@ -353,13 +393,8 @@
 
                 (state-call! Contribution :cancel-contrib-period OWNER1 0 2)
                 (state-call! Contribution :cancel-contrib-period OWNER2 0 2)
-                (is (= 75000000 (d0x-balance-of 0x0))))
-
-              (done)
-              )
-            ))))
-
-    ))
+                (is (= 75000000 (d0x-balance-of 0x0)))))))
+        (done)))))
 
 (comment
   )

@@ -5,7 +5,8 @@ import "./D0xToken.sol";
 import "./Shareable.sol";
 import "./Pausable.sol";
 
-contract Contribution is Shareable, SafeMath, Pausable {
+contract Contribution is Shareable, Pausable {
+    using SafeMath for uint;
 
     address public d0xToken;
     address public wallet;
@@ -17,17 +18,20 @@ contract Contribution is Shareable, SafeMath, Pausable {
     address public adviser3;
     address public adviser4;
 
-    uint public constant FOUNDER1_STAKE = 35000000000000000000000000;
-    uint public constant FOUNDER2_STAKE = 10000000000000000000000000;
-    uint public constant EARLY_SPONSOR_STAKE = 5000000000000000000000000;
-    uint public constant ADVISER_STAKE = 1250000000000000000000000;
-    uint public constant CONTRIB_PERIOD1_STAKE = 55000000000000000000000000;
-    uint public constant CONTRIB_PERIOD2_STAKE = 65000000000000000000000000;
-    uint public constant CONTRIB_PERIOD3_STAKE = 75000000000000000000000000;
+    uint public constant FOUNDER1_STAKE = 35000000000000000000000000; // 35M
+    uint public constant FOUNDER2_STAKE = 10000000000000000000000000; // 10M
+    uint public constant EARLY_SPONSOR_STAKE = 5000000000000000000000000; // 5M
+    uint public constant ADVISER_STAKE = 1250000000000000000000000; // 1.25M
+    uint public constant CONTRIB_PERIOD1_STAKE = 55000000000000000000000000; // 55M
+    uint public constant CONTRIB_PERIOD2_STAKE = 65000000000000000000000000; // 65M
+    uint public constant CONTRIB_PERIOD3_STAKE = 75000000000000000000000000; // 75M
 
     uint8 public constant CONTRIB_PERIODS = 3;
 
     uint public minContribAmount = 1000000000000000000; // 1 ether
+
+    uint public constant VESTING_CLIFF = 24 weeks;
+    uint public constant VESTING_PERIOD = 72 weeks;
 
     struct Contributor {
         uint amount;
@@ -115,13 +119,17 @@ contract Contribution is Shareable, SafeMath, Pausable {
         stopInEmergency
     {
         var periodIndex = getRunningContribPeriod();
-        require(periodIndex < CONTRIB_PERIODS);
+        require(periodIndex < contribPeriods.length);
         require(msg.value >= minContribAmount);
         if (contribPeriods[periodIndex].contributors[contributor].amount == 0) {
             contribPeriods[periodIndex].contributorsKeys.push(contributor);
         }
-        contribPeriods[periodIndex].contributors[contributor].amount += msg.value;
-        contribPeriods[periodIndex].totalContributed += msg.value;
+        contribPeriods[periodIndex].contributors[contributor].amount =
+            contribPeriods[periodIndex].contributors[contributor].amount.add(msg.value);
+
+        contribPeriods[periodIndex].totalContributed =
+            contribPeriods[periodIndex].totalContributed.add(msg.value);
+
         var totalContributed = contribPeriods[periodIndex].totalContributed;
 
         if (totalContributed >= contribPeriods[periodIndex].softCapAmount) {
@@ -146,15 +154,16 @@ contract Contribution is Shareable, SafeMath, Pausable {
         address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
         uint contributorsCount = contributorsKeys.length;
         ContribPeriod contribPeriod = contribPeriods[periodIndex];
-        uint ratio = safeMul(contribPeriodsStakes[periodIndex], 1000000000000000000) /
-            contribPeriods[periodIndex].totalContributed;
+        uint ratio = contribPeriodsStakes[periodIndex]
+            .mul(1000000000000000000)
+            .div(contribPeriods[periodIndex].totalContributed);
 
         while (i < contributorsCount && j < limit) {
             address contributorAddress = contributorsKeys[i];
             if (!contribPeriod.contributors[contributorAddress].isCompensated) {
                 uint contributedAmount = contribPeriod.contributors[contributorAddress].amount;
                 contribPeriod.contributors[contributorAddress].isCompensated = true;
-                D0xToken(d0xToken).transfer(contributorAddress, safeMul(contributedAmount, ratio) / 1000000000000000000);
+                D0xToken(d0xToken).transfer(contributorAddress, contributedAmount.mul(ratio).div(1000000000000000000));
                 j++;
             }
             i++;
@@ -180,7 +189,24 @@ contract Contribution is Shareable, SafeMath, Pausable {
         require(endTime > startTime);
 
         if (i == 0) {
-            // TODO locking balances here
+            D0xToken(d0xToken).revokeAllTokenGrants(founder1);
+            D0xToken(d0xToken).revokeAllTokenGrants(founder2);
+            D0xToken(d0xToken).revokeAllTokenGrants(earlySponsor);
+            D0xToken(d0xToken).revokeAllTokenGrants(adviser1);
+            D0xToken(d0xToken).revokeAllTokenGrants(adviser2);
+            D0xToken(d0xToken).revokeAllTokenGrants(adviser3);
+            D0xToken(d0xToken).revokeAllTokenGrants(adviser4);
+
+            uint64 vestingDate = uint64(now + VESTING_PERIOD);
+            uint64 cliffDate = uint64(now + VESTING_CLIFF);
+            uint64 startDate = uint64(startTime);
+            D0xToken(d0xToken).grantVestedTokens(founder1, FOUNDER1_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(founder2, FOUNDER2_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(earlySponsor, EARLY_SPONSOR_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(adviser1, ADVISER_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(adviser2, ADVISER_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(adviser3, ADVISER_STAKE, startDate, cliffDate, vestingDate);
+            D0xToken(d0xToken).grantVestedTokens(adviser4, ADVISER_STAKE, startDate, cliffDate, vestingDate);
         }
 
         address[] memory contributorsKeys;
@@ -254,15 +280,16 @@ contract Contribution is Shareable, SafeMath, Pausable {
         require(_d0xToken != 0x0);
         d0xToken = _d0xToken;
         if (D0xToken(d0xToken).totalSupply() == 0) {
-            D0xToken(d0xToken).mintToken(founder1, FOUNDER1_STAKE);
-            D0xToken(d0xToken).mintToken(founder2, FOUNDER2_STAKE);
-            D0xToken(d0xToken).mintToken(earlySponsor, EARLY_SPONSOR_STAKE);
-            D0xToken(d0xToken).mintToken(adviser1, ADVISER_STAKE);
-            D0xToken(d0xToken).mintToken(adviser2, ADVISER_STAKE);
-            D0xToken(d0xToken).mintToken(adviser3, ADVISER_STAKE);
-            D0xToken(d0xToken).mintToken(adviser4, ADVISER_STAKE);
-            D0xToken(d0xToken).mintToken(this, safeAdd(safeAdd(CONTRIB_PERIOD1_STAKE, CONTRIB_PERIOD2_STAKE),
-                CONTRIB_PERIOD3_STAKE));
+            D0xToken(d0xToken).createToken(this, FOUNDER1_STAKE
+                .add(FOUNDER2_STAKE)
+                .add(EARLY_SPONSOR_STAKE)
+                .add(ADVISER_STAKE)
+                .add(ADVISER_STAKE)
+                .add(ADVISER_STAKE)
+                .add(ADVISER_STAKE)
+                .add(CONTRIB_PERIOD1_STAKE)
+                .add(CONTRIB_PERIOD2_STAKE)
+                .add(CONTRIB_PERIOD3_STAKE));
         }
     }
 
