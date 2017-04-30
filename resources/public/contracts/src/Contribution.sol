@@ -197,8 +197,8 @@ contract Contribution is Shareable, Pausable {
             D0xToken(d0xToken).revokeAllTokenGrants(adviser3);
             D0xToken(d0xToken).revokeAllTokenGrants(adviser4);
 
-            uint64 vestingDate = uint64(now + VESTING_PERIOD);
-            uint64 cliffDate = uint64(now + VESTING_CLIFF);
+            uint64 vestingDate = uint64(startTime.add(VESTING_PERIOD));
+            uint64 cliffDate = uint64(startTime.add(VESTING_CLIFF));
             uint64 startDate = uint64(startTime);
             D0xToken(d0xToken).grantVestedTokens(founder1, FOUNDER1_STAKE, startDate, cliffDate, vestingDate);
             D0xToken(d0xToken).grantVestedTokens(founder2, FOUNDER2_STAKE, startDate, cliffDate, vestingDate);
