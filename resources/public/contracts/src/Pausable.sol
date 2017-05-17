@@ -12,6 +12,7 @@ import "./Shareable.sol";
  */
 contract Pausable is Shareable {
   bool public stopped;
+  event onEmergencyChanged(bool isStopped);
 
   modifier stopInEmergency {
     if (stopped) {
@@ -30,11 +31,13 @@ contract Pausable is Shareable {
   // called by the owner on emergency, triggers stopped state
   function emergencyStop() external onlyOwner {
     stopped = true;
+    onEmergencyChanged(stopped);
   }
 
   // called by the owner on end of emergency, returns to normal state
   function release() external onlyOwner onlyInEmergency {
     stopped = false;
+    onEmergencyChanged(stopped);
   }
 
 }

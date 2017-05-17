@@ -11,13 +11,12 @@ contract D0xToken is VestedToken {
 
     address public minter;
 
-
-    modifier only_minter {
+    modifier onlyMinter {
         assert(msg.sender == minter);
         _;
     }
 
-    modifier max_total_token_amount_not_reached(uint amount) {
+    modifier maxTotalTokenAmountNotReached(uint amount) {
         assert(totalSupply.add(amount) <= MAX_TOTAL_TOKEN_AMOUNT);
         _;
     }
@@ -28,8 +27,8 @@ contract D0xToken is VestedToken {
 
     function createToken(address recipient, uint amount)
         external
-        only_minter
-        max_total_token_amount_not_reached(amount)
+        onlyMinter
+        maxTotalTokenAmountNotReached(amount)
     {
         require(amount > 0);
         balances[recipient] = balances[recipient].add(amount);

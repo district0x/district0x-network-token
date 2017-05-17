@@ -13,10 +13,7 @@ contract Contribution is Shareable, Pausable {
     address public founder1;
     address public founder2;
     address public earlySponsor;
-    address public adviser1;
-    address public adviser2;
-    address public adviser3;
-    address public adviser4;
+    address[] public advisers;
 
     uint public constant FOUNDER1_STAKE = 35000000000000000000000000; // 35M
     uint public constant FOUNDER2_STAKE = 10000000000000000000000000; // 10M
@@ -30,8 +27,11 @@ contract Contribution is Shareable, Pausable {
 
     uint public minContribAmount = 1000000000000000000; // 1 ether
 
-    uint public constant VESTING_CLIFF = 24 weeks;
-    uint public constant VESTING_PERIOD = 72 weeks;
+//    uint public constant VESTING_CLIFF = 24 weeks;
+//    uint public constant VESTING_PERIOD = 72 weeks;
+
+    uint public constant VESTING_CLIFF = 0;
+    uint public constant VESTING_PERIOD = 0;
 
     struct Contributor {
         uint amount;
@@ -54,7 +54,8 @@ contract Contribution is Shareable, Pausable {
     ContribPeriod[] public contribPeriods;
     uint[] public contribPeriodsStakes;
 
-    event onContribution(uint indexed contribPeriodIndex, uint totalContributed, address contributor, uint amount);
+    event onContribution(uint indexed contribPeriodIndex, uint totalContributed, address indexed contributor, uint amount,
+        uint contributorsCount);
     event onSoftCapReached(uint indexed contribPeriodIndex, uint endTime);
 
     function Contribution(
@@ -64,10 +65,7 @@ contract Contribution is Shareable, Pausable {
         address _founder1,
         address _founder2,
         address _earlySponsor,
-        address _adviser1,
-        address _adviser2,
-        address _adviser3,
-        address _adviser4
+        address[] _advisers
     )
         Shareable(_owners, _required)
     {
@@ -75,10 +73,7 @@ contract Contribution is Shareable, Pausable {
         founder1 = _founder1;
         founder2 = _founder2;
         earlySponsor = _earlySponsor;
-        adviser1 = _adviser1;
-        adviser2 = _adviser2;
-        adviser3 = _adviser3;
-        adviser4 = _adviser4;
+        advisers = _advisers;
         contribPeriodsStakes = new uint[](CONTRIB_PERIODS);
         contribPeriodsStakes[0] = CONTRIB_PERIOD1_STAKE;
         contribPeriodsStakes[1] = CONTRIB_PERIOD2_STAKE;
@@ -98,6 +93,7 @@ contract Contribution is Shareable, Pausable {
         return CONTRIB_PERIODS;
     }
 
+    // For debugging, TODO remove after audit
     function getTimes() constant returns (uint, uint, uint, uint) {
         return (
             contribPeriods[0].startTime,
@@ -111,10 +107,10 @@ contract Contribution is Shareable, Pausable {
         payable
         stopInEmergency
     {
-        contribute(msg.sender);
+        contributeWithAddress(msg.sender);
     }
 
-    function contribute(address contributor)
+    function contributeWithAddress(address contributor)
         payable
         stopInEmergency
     {
@@ -127,19 +123,23 @@ contract Contribution is Shareable, Pausable {
         contribPeriods[periodIndex].contributors[contributor].amount =
             contribPeriods[periodIndex].contributors[contributor].amount.add(msg.value);
 
-        contribPeriods[periodIndex].totalContributed =
-            contribPeriods[periodIndex].totalContributed.add(msg.value);
+        var oldTotalContributed = contribPeriods[periodIndex].totalContributed;
 
-        var totalContributed = contribPeriods[periodIndex].totalContributed;
+        contribPeriods[periodIndex].totalContributed = oldTotalContributed.add(msg.value);
 
-        if (totalContributed >= contribPeriods[periodIndex].softCapAmount) {
+        var newTotalContributed = contribPeriods[periodIndex].totalContributed;
+
+        if (newTotalContributed >= contribPeriods[periodIndex].softCapAmount &&
+            oldTotalContributed < contribPeriods[periodIndex].softCapAmount)
+        {
             contribPeriods[periodIndex].softCapReached = true;
-            contribPeriods[periodIndex].endTime = now + contribPeriods[periodIndex].afterSoftCapDuration;
+            contribPeriods[periodIndex].endTime = contribPeriods[periodIndex].afterSoftCapDuration.add(now);
             onSoftCapReached(periodIndex, contribPeriods[periodIndex].endTime);
         }
 
         wallet.transfer(msg.value);
-        onContribution(periodIndex, totalContributed, contributor, msg.value);
+        onContribution(periodIndex, newTotalContributed, contributor, msg.value,
+            contribPeriods[periodIndex].contributorsKeys.length);
     }
 
     function compensateContributors(uint periodIndex, uint offset, uint limit)
@@ -190,23 +190,25 @@ contract Contribution is Shareable, Pausable {
 
         if (i == 0) {
             D0xToken(d0xToken).revokeAllTokenGrants(founder1);
+
             D0xToken(d0xToken).revokeAllTokenGrants(founder2);
             D0xToken(d0xToken).revokeAllTokenGrants(earlySponsor);
-            D0xToken(d0xToken).revokeAllTokenGrants(adviser1);
-            D0xToken(d0xToken).revokeAllTokenGrants(adviser2);
-            D0xToken(d0xToken).revokeAllTokenGrants(adviser3);
-            D0xToken(d0xToken).revokeAllTokenGrants(adviser4);
+
+            for (uint j = 0; j < advisers.length; j++) {
+                D0xToken(d0xToken).revokeAllTokenGrants(advisers[j]);
+            }
 
             uint64 vestingDate = uint64(startTime.add(VESTING_PERIOD));
             uint64 cliffDate = uint64(startTime.add(VESTING_CLIFF));
             uint64 startDate = uint64(startTime);
+
             D0xToken(d0xToken).grantVestedTokens(founder1, FOUNDER1_STAKE, startDate, cliffDate, vestingDate);
             D0xToken(d0xToken).grantVestedTokens(founder2, FOUNDER2_STAKE, startDate, cliffDate, vestingDate);
             D0xToken(d0xToken).grantVestedTokens(earlySponsor, EARLY_SPONSOR_STAKE, startDate, cliffDate, vestingDate);
-            D0xToken(d0xToken).grantVestedTokens(adviser1, ADVISER_STAKE, startDate, cliffDate, vestingDate);
-            D0xToken(d0xToken).grantVestedTokens(adviser2, ADVISER_STAKE, startDate, cliffDate, vestingDate);
-            D0xToken(d0xToken).grantVestedTokens(adviser3, ADVISER_STAKE, startDate, cliffDate, vestingDate);
-            D0xToken(d0xToken).grantVestedTokens(adviser4, ADVISER_STAKE, startDate, cliffDate, vestingDate);
+
+            for (j = 0; j < advisers.length; j++) {
+                D0xToken(d0xToken).grantVestedTokens(advisers[j], ADVISER_STAKE, startDate, cliffDate, vestingDate);
+            }
         }
 
         address[] memory contributorsKeys;
@@ -223,18 +225,45 @@ contract Contribution is Shareable, Pausable {
 
     function getContribPeriod(uint periodIndex)
         constant
-        returns (uint, uint, uint, uint, bool, bool, bool, uint, address[])
+        returns (bool[3] boolValues, uint[7] uintValues)
     {
-        ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
-        return (contribPeriod.softCapAmount,
-                contribPeriod.afterSoftCapDuration,
-                contribPeriod.startTime,
-                contribPeriod.endTime,
-                contribPeriod.isEnabled,
-                contribPeriod.isCompensated,
-                contribPeriod.softCapReached,
-                contribPeriod.totalContributed,
-                contribPeriod.contributorsKeys);
+        if (periodIndex < contribPeriods.length) {
+            ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
+            boolValues[0] = contribPeriod.isEnabled;
+            boolValues[1] = contribPeriod.isCompensated;
+            boolValues[2] = contribPeriod.softCapReached;
+
+            uintValues[0] = contribPeriod.softCapAmount;
+            uintValues[1] = contribPeriod.afterSoftCapDuration;
+            uintValues[2] = contribPeriod.startTime;
+            uintValues[3] = contribPeriod.endTime;
+            uintValues[4] = contribPeriod.totalContributed;
+            uintValues[5] = contribPeriod.contributorsKeys.length;
+            uintValues[6] = contribPeriodsStakes[periodIndex];
+
+            return (boolValues, uintValues);
+        }
+    }
+
+    function getContribPeriodContributors(uint periodIndex)
+        constant
+        returns (address[])
+    {
+        if (periodIndex < contribPeriods.length) {
+            ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
+            return contribPeriod.contributorsKeys;
+        }
+    }
+
+    function getConfiguration()
+        constant
+        returns (bool, uint, address, address, address, address, address[] memory)
+    {
+        var _advisers = new address[](advisers.length);
+        for (uint i = 0; i < advisers.length; i++) {
+            _advisers[i] = advisers[i];
+        }
+        return (stopped, required, wallet, founder1, founder2, earlySponsor, _advisers);
     }
 
     function cancelContribPeriod(uint periodIndex)
@@ -283,10 +312,7 @@ contract Contribution is Shareable, Pausable {
             D0xToken(d0xToken).createToken(this, FOUNDER1_STAKE
                 .add(FOUNDER2_STAKE)
                 .add(EARLY_SPONSOR_STAKE)
-                .add(ADVISER_STAKE)
-                .add(ADVISER_STAKE)
-                .add(ADVISER_STAKE)
-                .add(ADVISER_STAKE)
+                .add(ADVISER_STAKE.mul(advisers.length))
                 .add(CONTRIB_PERIOD1_STAKE)
                 .add(CONTRIB_PERIOD2_STAKE)
                 .add(CONTRIB_PERIOD3_STAKE));
@@ -302,6 +328,6 @@ contract Contribution is Shareable, Pausable {
         payable
         stopInEmergency
     {
-        contribute(msg.sender);
+        contributeWithAddress(msg.sender);
     }
 }

@@ -1,0 +1,121 @@
+@import (inline) "cljsjs/react-flexbox-grid/production/react-flexbox-grid.min.inc.css";
+
+@font-face {
+    font-family: ProximaNovaSoft;
+    src: url("../fonts/ProximaNovaSoft-Regular.otf") format("opentype");
+}
+
+@font-face {
+    font-family: ProximaNovaSoft;
+    font-weight: bold;
+    src: url("../fonts/ProximaNovaSoft-Semibold.otf") format("opentype");
+}
+
+
+html, body, #app {
+    height: 100%;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    -webkit-text-size-adjust: 100%;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+a.no-decor {
+    color: inherit !important;
+}
+
+a.hoverable:hover {
+  text-decoration: underline;
+}
+
+a.no-decor:hover {
+  text-decoration: none;
+}
+
+html {
+  font-family: 'filson-soft', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+    background-color: #fff;
+}
+
+body, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+}
+
+h1, h2, h3 {
+    font-weight: 300 !important;
+    line-height: 1.2em;
+    word-break: break-word;
+}
+
+h1.bolder, h2.bolder, h3.bolder {
+    font-weight: 400 !important;
+}
+
+.black {
+    color: #000;
+}
+
+.white {
+    color: #FFF;
+}
+
+h3 {
+    line-height: 1.4em;
+}
+
+body {
+  font-size: 15px;
+  //line-height: 24px;
+}
+
+strong, b {
+    font-weight: 600;
+}
+
+.sm-visible, .md-visible, .lg-visible {
+    display: none;
+}
+
+@media only screen and (min-width:48em) {
+    .sm-visible {
+        display: block;
+    }
+    .sm-margin-0 {
+        margin: 0;
+    }
+    .sm-margin-top-0 {
+        margin-top: 0 !important;
+    }
+}
+
+@media only screen and (min-width:64em) {
+    .md-visible {
+        display: block;
+    }
+    .md-margin-0 {
+        margin: 0;
+    }
+}
+
+@media only screen and (min-width:75em) {
+    .lg-visible {
+        display: block;
+    }
+    .lg-margin-0 {
+        margin: 0;
+    }
+}
+
+.icon svg path {
+    color: "#FFF";
+    fill: "#FFF";
+}

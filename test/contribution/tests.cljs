@@ -13,6 +13,7 @@
     [cljs.test :refer-macros [deftest is testing run-tests use-fixtures async]]
     [cljsjs.bignumber]
     [cljsjs.web3]
+    [contribution.utils :as u]
     [print.foo :include-macros true])
   (:require-macros [cljs.core.async.macros :refer [go]]))
 
@@ -38,16 +39,8 @@
     (.error js/console err))
   (assert (not err)))
 
-(defn big-num->num [x]
-  (if (and x (aget x "toNumber"))
-    (.toNumber x)
-    x))
-
 (defn big-number [x]
   (new js/BigNumber x))
-
-(defn big-nums->nums [coll]
-  (map big-num->num coll))
 
 (defn eq? [x y]
   (.eq x y))
@@ -78,7 +71,7 @@
                                                       :value (web3/to-wei ether-value :ether)}])))
 
 (defn- to-ether [x]
-  (.toNumber (web3/from-wei x :ether)))
+  (js/parseFloat (u/big-num->num (web3/from-wei x :ether))))
 
 (defn- to-wei [x]
   (js/parseInt (web3/to-wei x :ether)))
@@ -113,6 +106,9 @@
   (not (eq? (contract-call Contribution :CONTRIB_PERIODS)
             (contract-call Contribution :get-running-contrib-period))))
 
+(defn get-contrib-period [period-index]
+  (u/parse-get-contrib-period (contract-call Contribution :get-contrib-period period-index)))
+
 (use-fixtures
   :each
   {:before
@@ -142,10 +138,10 @@
                               (account FOUNDER1)
                               (account FOUNDER2)
                               (account EARLY_SPONSOR)
-                              (account ADVISER1)
-                              (account ADVISER2)
-                              (account ADVISER3)
-                              (account ADVISER4))
+                              [(account ADVISER1)
+                               (account ADVISER2)
+                               (account ADVISER3)
+                               (account ADVISER4)])
              (set! Contribution (<! contrib-ch))
              (deploy-contract d0x-token-abi d0x-token-bin d0x-token-ch (aget Contribution "address"))
              (set! D0xToken (<! d0x-token-ch))
@@ -164,10 +160,10 @@
   (is (= (account FOUNDER1) (contract-call Contribution :founder1)))
   (is (= (account FOUNDER2) (contract-call Contribution :founder2)))
   (is (= (account EARLY_SPONSOR) (contract-call Contribution :early-sponsor)))
-  (is (= (account ADVISER1) (contract-call Contribution :adviser1)))
-  (is (= (account ADVISER2) (contract-call Contribution :adviser2)))
-  (is (= (account ADVISER3) (contract-call Contribution :adviser3)))
-  (is (= (account ADVISER4) (contract-call Contribution :adviser4)))
+  (is (= (account ADVISER1) (contract-call Contribution :advisers 0)))
+  (is (= (account ADVISER2) (contract-call Contribution :advisers 1)))
+  (is (= (account ADVISER3) (contract-call Contribution :advisers 2)))
+  (is (= (account ADVISER4) (contract-call Contribution :advisers 3)))
   (is (= (account OWNER1) (contract-call Contribution :get-owner 1)))
   (is (= (account OWNER2) (contract-call Contribution :get-owner 2)))
   (is (= 250000000 (to-ether (contract-call D0xToken :total-supply))))
@@ -194,8 +190,16 @@
         wait-ch (chan)]
     (testing "Should be able to set contribution period"
       (state-call! Contribution :set-contrib-period OWNER1 0 0 soft-cap-amount after-soft-cap-duration start-time end-time)
-      (is (= [soft-cap-amount after-soft-cap-duration start-time end-time false false false 0 []]
-             (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0)))))
+      (let [contrib-period (get-contrib-period 0)]
+        (is (= (to-ether soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+        (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
+        (is (= start-time (to-long (:contrib-period/start-time contrib-period))))
+        (is (= end-time (to-long (:contrib-period/end-time contrib-period))))
+        (is (= false (:contrib-period/enabled? contrib-period)))
+        (is (= false (:contrib-period/compensated? contrib-period)))
+        (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+        (is (zero? (:contrib-period/total-contributed contrib-period)))
+        (is (zero? (:contrib-period/contributors-count contrib-period))))
 
       (is (= 35000000 (account-d0x-balance FOUNDER1)))
       (is (= 10000000 (account-d0x-balance FOUNDER2)))
@@ -217,8 +221,17 @@
 
     (testing "Setting first contrib period again will keep correct d0x balances"
       (state-call! Contribution :set-contrib-period OWNER1 0 0 soft-cap-amount after-soft-cap-duration start-time end-time)
-      (is (= [soft-cap-amount after-soft-cap-duration start-time end-time false false false 0 []]
-             (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0)))))
+
+      (let [contrib-period (get-contrib-period 0)]
+        (is (= (to-ether soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+        (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
+        (is (= start-time (to-long (:contrib-period/start-time contrib-period))))
+        (is (= end-time (to-long (:contrib-period/end-time contrib-period))))
+        (is (= false (:contrib-period/enabled? contrib-period)))
+        (is (= false (:contrib-period/compensated? contrib-period)))
+        (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+        (is (zero? (:contrib-period/total-contributed contrib-period)))
+        (is (zero? (:contrib-period/contributors-count contrib-period))))
 
       (is (= 35000000 (account-d0x-balance FOUNDER1)))
       (is (= 10000000 (account-d0x-balance FOUNDER2)))
@@ -235,11 +248,11 @@
 
     (testing "Only one owner shouldn't be able to enable contribution period"
       (state-call! Contribution :enable-contrib-period OWNER1 0 0)
-      (is (= false (nth (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0))) 4))))
+      (is (= false (:contrib-period/enabled? (get-contrib-period 0)))))
 
     (testing "Confirmation of another owner should enable contribution period"
       (state-call! Contribution :enable-contrib-period OWNER2 0 0)
-      (is (= true (nth (vec (big-nums->nums (contract-call Contribution :get-contrib-period 0))) 4))))
+      (is (= true (:contrib-period/enabled? (get-contrib-period 0)))))
 
     (testing "Shouldn't be able to contribute before contribution start time"
       (is (thrown? js/Error (state-call! Contribution :contribute 10 1 (account 10)))))
@@ -276,8 +289,13 @@
                 (let [[contrib-amount compensated?] (contract-call Contribution :get-contributor 0 (account acc-index))]
                   (is (= (to-ether contrib-amount) amount))
                   (is (false? compensated?))))
-              (is (= [false contribs-total contributors]
-                     (vec (take-last 3 (big-nums->nums (contract-call Contribution :get-contrib-period 0)))))))
+
+              (let [contrib-period (get-contrib-period 0)]
+                (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+                (is (= (to-ether contribs-total) (:contrib-period/total-contributed contrib-period)))
+                (is (= (count contributors) (:contrib-period/contributors-count contrib-period))))
+
+              (is (= contributors (contract-call Contribution :get-contrib-period-contributors 0))))
 
             (testing "Shouldn't be able to compensate when contrib period is still running"
               (is (thrown? js/Error (state-call! Contribution :compensate-contributors OWNER1 0 0 10))))
@@ -300,7 +318,7 @@
               (is (thrown? js/Error (state-call! Contribution :enable-contrib-period OWNER2 0 0))))
 
             (testing "Contrib period should be marked as compensated"
-              (is (= true (nth (contract-call Contribution :get-contrib-period 0) 5))))))
+              (is (= true (:contrib-period/compensated? (get-contrib-period 0)))))))
 
         (testing "Contribution round 2"
           (let [wallet-balance-before (account-eth-balance WALLET)
@@ -320,8 +338,17 @@
                 d0x-compensated-total (reduce (fn [acc x]
                                                 (.plus x acc)) 0 expected-d0x-balances)]
             (state-call! Contribution :set-contrib-period OWNER1 0 1 soft-cap-amount after-soft-cap-duration start-time end-time)
-            (is (= [soft-cap-amount after-soft-cap-duration start-time end-time false false false 0 []]
-                   (vec (big-nums->nums (contract-call Contribution :get-contrib-period 1)))))
+
+            (let [contrib-period (get-contrib-period 1)]
+              (is (= (to-ether soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+              (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
+              (is (= start-time (to-long (:contrib-period/start-time contrib-period))))
+              (is (= end-time (to-long (:contrib-period/end-time contrib-period))))
+              (is (= false (:contrib-period/enabled? contrib-period)))
+              (is (= false (:contrib-period/compensated? contrib-period)))
+              (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+              (is (zero? (:contrib-period/total-contributed contrib-period)))
+              (is (zero? (:contrib-period/contributors-count contrib-period))))
 
             (state-call! Contribution :enable-contrib-period OWNER1 0 1)
             (state-call! Contribution :enable-contrib-period OWNER2 0 1)
@@ -342,12 +369,16 @@
                   (is (= (to-ether contrib-amount) amount))
                   (is (false? compensated?))))
 
-              (let [contrib-period (big-nums->nums (contract-call Contribution :get-contrib-period 1))
-                    [_ _ _ contrib-end-time] contrib-period]
-                (is (= [true contribs-total contributors]
-                       (vec (take-last 3 contrib-period))))
-                (testing "Hitting soft cap should change contrib period end time"
-                  (is (<= (+ start-time after-soft-cap-duration) contrib-end-time (+ start-time after-soft-cap-duration 5)))))
+              (testing "Hitting soft cap should change contrib period end time"
+                (let [contrib-period (get-contrib-period 1)]
+                  (is (<= (+ start-time after-soft-cap-duration)
+                          (to-long (:contrib-period/end-time contrib-period))
+                          (+ start-time after-soft-cap-duration 5)))
+                  (is (= true (:contrib-period/soft-cap-reached? contrib-period)))
+                  (is (= (to-ether contribs-total) (:contrib-period/total-contributed contrib-period)))
+                  (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
+
+              (is (= contributors (contract-call Contribution :get-contrib-period-contributors 1)))
 
               (wait (inc after-soft-cap-duration) wait-ch)
               (<! wait-ch)

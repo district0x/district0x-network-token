@@ -50,7 +50,9 @@ contract VestedToken is StandardToken, LimitedTransferToken {
 
     // remove grant from array
     delete grants[_holder][_grantId];
-    grants[_holder][_grantId] = grants[_holder][grants[_holder].length - 1];
+    if (_grantId < grants[_holder].length - 1) {
+        grants[_holder][_grantId] = grants[_holder][grants[_holder].length - 1];
+    }
     grants[_holder].length -= 1;
 
     balances[msg.sender] = balances[msg.sender].add(nonVested);
@@ -61,7 +63,7 @@ contract VestedToken is StandardToken, LimitedTransferToken {
   function revokeAllTokenGrants(address _holder) {
     var grandsCount = tokenGrantsCount(_holder);
     for (uint i = 0; i < grandsCount; i++) {
-        revokeTokenGrant(_holder, i);
+        revokeTokenGrant(_holder, 0);
     }
   }
 
