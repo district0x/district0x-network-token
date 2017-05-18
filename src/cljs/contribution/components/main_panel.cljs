@@ -71,7 +71,7 @@
   (let [[props children] (u/parse-props-children props children)]
     [:div
      props
-     [:span
+     [:b
       {:style {:color styles/theme-cyan}}
       (first children)] " "
      (into
@@ -88,13 +88,13 @@
     (fn []
       (let [{:keys [:contrib-period/start-time :contrib-period/end-time
                     :contrib-period/soft-cap-amount :contrib-period/after-soft-cap-duration
-                    :contrib-period/enabled? :contrib-period/compensated? :contrib-period/stake
-                    :contrib-period/soft-cap-reached? :contrib-period/total-contributed
-                    :contrib-period/contributors-count]} @current-contrib-period
+                    :contrib-period/hard-cap-amount :contrib-period/enabled? :contrib-period/compensated?
+                    :contrib-period/stake :contrib-period/soft-cap-reached? :contrib-period/total-contributed
+                    :contrib-period/hard-cap-reached? :contrib-period/contributors-count]} @current-contrib-period
             {:keys [:loading?]} @enable-contrib-form
             {:keys [:contribution/stopped? :contribution/founder1 :contribution/founder2
                     :contribution/early-sponsor :contribution/wallet :contribution/advisers
-                    :contribution-address :d0x-token-address]} @contrib-config]
+                    :contribution-address :d0x-token-address :d0x-token/transfers-enabled?]} @contrib-config]
         (when @active-address-owner?
           [paper
            [row
@@ -122,16 +122,19 @@
                [info-line "Contribution Round:" (inc constants/current-contrib-period)]
                [info-line "Start Time:" (u/format-local-datetime start-time)]
                [info-line "End Time:" (u/format-local-datetime end-time)]
-               [info-line "Soft Cap:" (u/format-eth soft-cap-amount) " ETH"]
+               [info-line "Soft Cap:" (u/format-eth-with-symbol soft-cap-amount)]
                [info-line "After Soft Cap Duration:" (t/in-hours (t/millis after-soft-cap-duration)) " hours"]
+               [info-line "Hard Cap:" (u/format-eth-with-symbol hard-cap-amount)]
                [info-line "Enabled?" (u/boolean->str enabled?)]
                [info-line "Token Amount Distributed:" (u/format-d0x-with-symbol stake)]
                [info-line "Token Distributed?" (u/boolean->str compensated?)]
                [info-line "Soft Cap Reached?" (u/boolean->str soft-cap-reached?)]
+               [info-line "Hard Cap Reached?" (u/boolean->str hard-cap-reached?)]
                [info-line "Total Contributed:" (u/format-eth-with-symbol total-contributed)]
                [info-line "Contributors Count:" contributors-count]
                [info-line "Emergency stop?" (u/boolean->str stopped?)]
-               [info-line "Contribution Contract d0x Balance:" (u/format-d0x-with-symbol @contrib-contract-d0x-balance)]])
+               [info-line "Contribution Contract d0x Balance:" (u/format-d0x-with-symbol @contrib-contract-d0x-balance)]
+               [info-line "d0x Transfers Enabled?" (u/boolean->str transfers-enabled?)]])
             (when (and (not enabled?)
                        (= @contrib-period-status :contrib-period-status/not-started))
               [col

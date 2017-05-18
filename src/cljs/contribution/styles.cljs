@@ -21,7 +21,7 @@
               :text-color "#FFF"})
 
 (def mui-theme (get-mui-theme {:palette palette
-                               :font-family "filson-soft, sans-serif"
+                               :font-family "proxima-soft, sans-serif"
                                :text-field {:error-color theme-orange
                                             :floating-label-color "#FFF"
                                             :focus-color theme-green
@@ -138,7 +138,8 @@
 (def stats-tile
   {:text-align "center"
    :height 250
-   :color theme-green})
+   :color theme-green
+   :font-family "filson-soft, sans-serif"})
 
 (def stats-tile-title
   {:text-transform "uppercase"

@@ -143,19 +143,40 @@
   (gstring/format "https://etherscan.io/address/%s" address))
 
 (defn parse-get-contrib-period [[bool-vals uint-vals]]
-  (let [[enabled? compensated? soft-cap-reached?] bool-vals
-        [soft-cap-amount after-soft-cap-duration start-time end-time total-contributed
+  (let [[enabled? compensated? soft-cap-reached? hard-cap-reached?] bool-vals
+        [soft-cap-amount after-soft-cap-duration hard-cap-amount start-time end-time total-contributed
          contributors-count contrib-period-stake] uint-vals]
     {:contrib-period/soft-cap-amount (big-num->eth-num soft-cap-amount)
      :contrib-period/after-soft-cap-duration (big-num->num after-soft-cap-duration)
+     :contrib-period/hard-cap-amount (big-num->eth-num hard-cap-amount)
      :contrib-period/start-time (big-num->date-time start-time)
      :contrib-period/end-time (big-num->date-time end-time)
      :contrib-period/enabled? enabled?
      :contrib-period/compensated? compensated?
      :contrib-period/soft-cap-reached? soft-cap-reached?
+     :contrib-period/hard-cap-reached? hard-cap-reached?
      :contrib-period/total-contributed (big-num->eth-num total-contributed)
      :contrib-period/contributors-count (big-num->num contributors-count)
      :contrib-period/stake (big-num->eth-num contrib-period-stake)}))
+
+(defn contrib-period-args [contrib-period]
+  ((juxt :contribution/period-index
+         :contrib-period/soft-cap-amount
+         :contrib-period/after-soft-cap-duration
+         :contrib-period/hard-cap-amount
+         :contrib-period/start-time
+         :contrib-period/end-time)
+    contrib-period))
+
+(defn parse-get-configuration [[stopped? required-count wallet founder1 founder2 early-sponsor advisers transfers-enabled?]]
+  {:contribution/stopped? stopped?
+   :contribution/required-count (big-num->num required-count)
+   :contribution/wallet wallet
+   :contribution/founder1 founder1
+   :contribution/founder2 founder2
+   :contribution/early-sponsor early-sponsor
+   :contribution/advisers advisers
+   :d0x-token/transfers-enabled? transfers-enabled?})
 
 (defn time-remaining [from-time to-time]
   (let [milis-difference (- (to-long to-time) (to-long from-time))]

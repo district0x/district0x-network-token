@@ -10,6 +10,7 @@ contract D0xToken is VestedToken {
     uint public constant MAX_TOTAL_TOKEN_AMOUNT = 250000000000000000000000000; // 250M
 
     address public minter;
+    bool public transfersEnabled = false;
 
     modifier onlyMinter {
         assert(msg.sender == minter);
@@ -21,8 +22,32 @@ contract D0xToken is VestedToken {
         _;
     }
 
+    modifier transfersAreEnabled {
+        assert(transfersEnabled || msg.sender == minter);
+        _;
+    }
+
     function D0xToken(address _minter) {
         minter = _minter;
+    }
+
+    function transfer(address _to, uint _value)
+        transfersAreEnabled
+    {
+        return super.transfer(_to, _value);
+    }
+
+    function transferFrom(address _from, address _to, uint _value)
+        transfersAreEnabled
+    {
+        return super.transferFrom(_from, _to, _value);
+    }
+
+    function enableTransfers(bool _enabled)
+        external
+        onlyMinter
+    {
+        transfersEnabled = _enabled;
     }
 
     function createToken(address recipient, uint amount)

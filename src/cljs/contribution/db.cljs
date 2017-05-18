@@ -45,14 +45,17 @@
 (s/def :contribution/early-sponsor (s/nilable u/address?))
 (s/def :contribution/wallet (s/nilable u/address?))
 (s/def :contribution/advisers (s/coll-of u/address?))
+(s/def :d0x-token/transfers-enabled? boolean?)
 
 (s/def :contrib-period/soft-cap-amount u/not-neg?)
 (s/def :contrib-period/after-soft-cap-duration u/not-neg?)
+(s/def :contrib-period/hard-cap-amount u/not-neg?)
 (s/def :contrib-period/start-time (s/nilable u/date?))
 (s/def :contrib-period/end-time (s/nilable u/date?))
 (s/def :contrib-period/enabled? boolean?)
 (s/def :contrib-period/compensated? boolean?)
 (s/def :contrib-period/soft-cap-reached? boolean?)
+(s/def :contrib-period/hard-cap-reached? boolean?)
 (s/def :contrib-period/total-contributed u/not-neg?)
 (s/def :contrib-period/contributors-count u/not-neg?)
 (s/def :contrib-period/stake u/not-neg?)
@@ -60,11 +63,13 @@
 
 (s/def :contribution/contrib-period (s/keys :opt [:contrib-period/soft-cap-amount
                                                   :contrib-period/after-soft-cap-duration
+                                                  :contrib-period/hard-cap-amount
                                                   :contrib-period/start-time
                                                   :contrib-period/end-time
                                                   :contrib-period/enabled?
                                                   :contrib-period/compensated?
                                                   :contrib-period/soft-cap-reached?
+                                                  :contrib-period/hard-cap-reached?
                                                   :contrib-period/total-contributed
                                                   :contrib-period/contributors-count
                                                   :contrib-period/stake
@@ -105,6 +110,8 @@
    :load-all-conversion-rates-interval nil
    :now (t/now)
    :blockchain/balances {}
+
+   :d0x-token/transfers-enabled? false
 
    :contribution/stopped? false
    :contribution/address->owner? {}

@@ -265,6 +265,8 @@
                   "latest" :contract.contribution/on-contribution [:log-error :on-contribution]]
                  [contribution-instance :on-soft-cap-reached {:contrib-period-index constants/current-contrib-period}
                   "latest" :contract.contribution/on-soft-cap-reached [:log-error :on-soft-cap-reached]]
+                 [contribution-instance :on-hard-cap-reached {:contrib-period-index constants/current-contrib-period}
+                  "latest" :contract.contribution/on-hard-cap-reached [:log-error :on-hard-cap-reached]]
                  [contribution-instance :on-emergency-changed {}
                   "latest" :contract.contribution/on-emergency-changed [:log-error :on-emergency-changed]]]}})))
 
@@ -286,6 +288,15 @@
      :dispatch [:snackbar/show-message "Amazing! Soft Cap was just reached!"]}))
 
 (reg-event-fx
+  :contract.contribution/on-hard-cap-reached
+  interceptors
+  (fn [{:keys [db]} [{:keys [:contrib-period-index :end-time]}]]
+    {:db (update-in db [:contribution/contrib-periods (u/big-num->num contrib-period-index)] merge
+                    {:contrib-period/end-time (u/big-num->date-time end-time)
+                     :contrib-period/hard-cap-reached? true})
+     :dispatch [:snackbar/show-message "Unbelievable! Our Hard Cap was reached! The Sale is over now"]}))
+
+(reg-event-fx
   :contract.contribution/on-emergency-changed
   interceptors
   (fn [{:keys [db]} [{:keys [:is-stopped]}]]
@@ -301,12 +312,7 @@
     {:dispatch [:contract/state-call
                 {:contract-key :contribution
                  :contract-method :set-contrib-period
-                 :args ((juxt :contribution/period-index
-                              :contrib-period/soft-cap-amount
-                              :contrib-period/after-soft-cap-duration
-                              :contrib-period/start-time
-                              :contrib-period/end-time)
-                         args)
+                 :args (u/contrib-period-args args)
                  :transaction-opts {:gas 4000000
                                     :from (if address-index
                                             (nth (:my-addresses db) address-index)
@@ -346,16 +352,11 @@
 (reg-event-fx
   :contract.contribution/get-configuration-loaded
   interceptors
-  (fn [{:keys [db]} [[stopped? required-count wallet founder1 founder2 early-sponsor advisers :as result]]]
-    (if-not (u/zero-address? wallet)
-      {:db (merge db {:contribution/stopped? stopped?
-                      :contribution/required-count (u/big-num->num required-count)
-                      :contribution/wallet wallet
-                      :contribution/founder1 founder1
-                      :contribution/founder2 founder2
-                      :contribution/early-sponsor early-sponsor
-                      :contribution/advisers advisers})}
-      {:db (assoc db :contracts-not-found? true)})))
+  (fn [{:keys [db]} [configuration]]
+    (let [config (u/parse-get-configuration configuration)]
+      (if-not (u/zero-address? (:contribution/wallet config))
+        {:db (merge db config)}
+        {:db (assoc db :contracts-not-found? true)}))))
 
 (reg-event-fx
   :contract.contribution/contribute
@@ -606,9 +607,10 @@
                                             :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 5)))
                                             :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
                                             :contrib-period/soft-cap-amount (u/eth->wei 5)
+                                            :contrib-period/hard-cap-amount (u/eth->wei 10)
                                             :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 1))}
                                            0]}
-                      {:ms 2500 :dispatch [:contract.contribution/enable-contrib-period {:contribution/period-index 0}]}]}))
+                      {:ms 3000 :dispatch [:contract.contribution/enable-contrib-period {:contribution/period-index 0}]}]}))
 
 (reg-event-fx
   :contract/state-call
@@ -732,7 +734,8 @@
               :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 1)))
               :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
               :contrib-period/soft-cap-amount (u/eth->wei 55000)
-              :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 30))}
+              :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 30))
+              :contrib-period/hard-cap-amount (u/eth->wei 65000)}
              0])
 
   (dispatch [:contract.contribution/set-contrib-period
@@ -740,7 +743,8 @@
               :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 30)))
               :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
               :contrib-period/soft-cap-amount (u/eth->wei 5)
-              :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 10))}
+              :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 10))
+              :contrib-period/hard-cap-amount (u/eth->wei 10)}
              0])
 
   (dispatch [:contract/call :contribution :d0x-token])
