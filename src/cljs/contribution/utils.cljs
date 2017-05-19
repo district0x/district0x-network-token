@@ -143,7 +143,7 @@
   (gstring/format "https://etherscan.io/address/%s" address))
 
 (defn parse-get-contrib-period [[bool-vals uint-vals]]
-  (let [[enabled? compensated? soft-cap-reached? hard-cap-reached?] bool-vals
+  (let [[enabled? soft-cap-reached? hard-cap-reached?] bool-vals
         [soft-cap-amount after-soft-cap-duration hard-cap-amount start-time end-time total-contributed
          contributors-count contrib-period-stake] uint-vals]
     {:contrib-period/soft-cap-amount (big-num->eth-num soft-cap-amount)
@@ -152,7 +152,6 @@
      :contrib-period/start-time (big-num->date-time start-time)
      :contrib-period/end-time (big-num->date-time end-time)
      :contrib-period/enabled? enabled?
-     :contrib-period/compensated? compensated?
      :contrib-period/soft-cap-reached? soft-cap-reached?
      :contrib-period/hard-cap-reached? hard-cap-reached?
      :contrib-period/total-contributed (big-num->eth-num total-contributed)

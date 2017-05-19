@@ -88,7 +88,7 @@
     (fn []
       (let [{:keys [:contrib-period/start-time :contrib-period/end-time
                     :contrib-period/soft-cap-amount :contrib-period/after-soft-cap-duration
-                    :contrib-period/hard-cap-amount :contrib-period/enabled? :contrib-period/compensated?
+                    :contrib-period/hard-cap-amount :contrib-period/enabled?
                     :contrib-period/stake :contrib-period/soft-cap-reached? :contrib-period/total-contributed
                     :contrib-period/hard-cap-reached? :contrib-period/contributors-count]} @current-contrib-period
             {:keys [:loading?]} @enable-contrib-form
@@ -126,8 +126,7 @@
                [info-line "After Soft Cap Duration:" (t/in-hours (t/millis after-soft-cap-duration)) " hours"]
                [info-line "Hard Cap:" (u/format-eth-with-symbol hard-cap-amount)]
                [info-line "Enabled?" (u/boolean->str enabled?)]
-               [info-line "Token Amount Distributed:" (u/format-d0x-with-symbol stake)]
-               [info-line "Token Distributed?" (u/boolean->str compensated?)]
+               [info-line "Token Distribution:" (u/format-d0x-with-symbol stake)]
                [info-line "Soft Cap Reached?" (u/boolean->str soft-cap-reached?)]
                [info-line "Hard Cap Reached?" (u/boolean->str hard-cap-reached?)]
                [info-line "Total Contributed:" (u/format-eth-with-symbol total-contributed)]
@@ -162,7 +161,10 @@
        [:div
         {:style (merge styles/stats-tile-title
                        (if @xs-sm-width?
-                         styles/margin-top-gutter-less
+                         (merge
+                           styles/margin-top-gutter-less
+                           styles/stats-tile-border-bottom
+                           {:margin-right 0 :margin-left 0})
                          styles/stats-tile-border-bottom))}
         title]
        (into [row-plain
@@ -230,11 +232,11 @@
   (let [xs-width? (subscribe [:window/xs-width?])
         current-contrib-period (subscribe [:contribution/current-contrib-period])
         contrib-period-status (subscribe [:contribution/current-contrib-period-status])
-        now (subscribe [:db/now])
-        total-contributed-usd (subscribe [:contribution/total-contributed-usd])]
+        now (subscribe [:db/now])]
     (fn []
       (let [{:keys [:contrib-period/loading? :contrib-period/start-time :contrib-period/end-time
-                    :contrib-period/total-contributed :contrib-period/stake]} @current-contrib-period]
+                    :contrib-period/total-contributed :contrib-period/stake
+                    :contrib-period/contributors-count]} @current-contrib-period]
         [row
          {:center "xs"}
          [col
@@ -272,10 +274,9 @@
                {:style styles/stats-tile-amount}
                (u/format-humanize total-contributed)]
               [:span {:style {:font-size "1.2em"}} " ETH"]]
-             (when @total-contributed-usd
-               [:h3
-                {:style styles/stats-tile-amount-subtitle}
-                "$" (u/format-usd @total-contributed-usd)])]
+             [:h3
+              {:style styles/stats-tile-amount-subtitle}
+              contributors-count (u/pluralize " participant" contributors-count)]]
             [ui/circular-progress])]
          [contribution-tile
           {:title "Token Distribution"
@@ -338,9 +339,7 @@
                          (not (u/non-neg-ether-value? amount)) "This is not valid Ether value"
                          (< (u/parse-float amount) constants/min-contrib-amount) (str "Minimum contribution amount is "
                                                                                       constants/min-contrib-amount
-                                                                                      " ETH"))
-            valid-input? (and (u/non-neg-ether-value? amount)
-                              )]
+                                                                                      " ETH"))]
         [row-plain
          {:center "xs"
           :style styles/margin-top-gutter-more}
@@ -391,7 +390,7 @@
              {:primary true
               :label "Send"
               :disabled (or (not @can-use-form?)
-                            (not valid-input?)
+                            (boolean error-text)
                             (not= :contrib-period-status/running @contrib-period-status)
                             (not enabled?)
                             stopped?)

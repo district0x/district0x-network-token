@@ -606,8 +606,8 @@
                                            {:contribution/period-index 0
                                             :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 5)))
                                             :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
-                                            :contrib-period/soft-cap-amount (u/eth->wei 5)
-                                            :contrib-period/hard-cap-amount (u/eth->wei 10)
+                                            :contrib-period/soft-cap-amount (u/eth->wei 1)
+                                            :contrib-period/hard-cap-amount (u/eth->wei 2)
                                             :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 1))}
                                            0]}
                       {:ms 3000 :dispatch [:contract.contribution/enable-contrib-period {:contribution/period-index 0}]}]}))
@@ -671,7 +671,7 @@
     (when-not generate-mode?
       {:db (update db :snackbar merge
                    {:open? true
-                    :message (or error-text "Oops, we got an error while sending data to blockchain")
+                    :message (or error-text "Oops, your transaction hasn't been successful")
                     :action nil
                     :on-action-touch-tap nil})})))
 

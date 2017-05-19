@@ -53,7 +53,6 @@
 (s/def :contrib-period/start-time (s/nilable u/date?))
 (s/def :contrib-period/end-time (s/nilable u/date?))
 (s/def :contrib-period/enabled? boolean?)
-(s/def :contrib-period/compensated? boolean?)
 (s/def :contrib-period/soft-cap-reached? boolean?)
 (s/def :contrib-period/hard-cap-reached? boolean?)
 (s/def :contrib-period/total-contributed u/not-neg?)
@@ -67,7 +66,6 @@
                                                   :contrib-period/start-time
                                                   :contrib-period/end-time
                                                   :contrib-period/enabled?
-                                                  :contrib-period/compensated?
                                                   :contrib-period/soft-cap-reached?
                                                   :contrib-period/hard-cap-reached?
                                                   :contrib-period/total-contributed

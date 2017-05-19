@@ -25,7 +25,7 @@ contract Contribution is Shareable, Pausable {
 
     uint8 public constant CONTRIB_PERIODS = 3;
 
-    uint public minContribAmount = 1000000000000000000; // 1 ether
+    uint public minContribAmount = 100000000000000000; // 0.1 ether
 
     uint public constant VESTING_CLIFF = 24 weeks;
     uint public constant VESTING_PERIOD = 72 weeks;
@@ -33,6 +33,7 @@ contract Contribution is Shareable, Pausable {
     struct Contributor {
         uint amount;
         bool isCompensated;
+        uint amountCompensated;
     }
 
     struct ContribPeriod {
@@ -42,7 +43,6 @@ contract Contribution is Shareable, Pausable {
         uint startTime;
         uint endTime;
         bool isEnabled;
-        bool isCompensated;
         bool softCapReached;
         bool hardCapReached;
         uint totalContributed;
@@ -84,7 +84,6 @@ contract Contribution is Shareable, Pausable {
         for (uint i = 0; i < contribPeriods.length; i++) {
             ContribPeriod contribPeriod = contribPeriods[i];
             if (!contribPeriod.hardCapReached &&
-                !contribPeriod.isCompensated &&
                 contribPeriod.isEnabled &&
                 contribPeriod.startTime <= now &&
                 contribPeriod.endTime >= now) {
@@ -94,16 +93,6 @@ contract Contribution is Shareable, Pausable {
         return CONTRIB_PERIODS;
     }
 
-    // For debugging, TODO remove after audit
-    function getTimes() constant returns (uint, uint, uint, uint) {
-        return (
-            contribPeriods[0].startTime,
-            now - contribPeriods[0].startTime,
-            contribPeriods[0].endTime - now,
-            now
-        );
-    }
-
     function contribute()
         payable
         stopInEmergency
@@ -111,6 +100,7 @@ contract Contribution is Shareable, Pausable {
         contributeWithAddress(msg.sender);
     }
 
+    // Function for contributing
     function contributeWithAddress(address contributor)
         payable
         stopInEmergency
@@ -130,13 +120,16 @@ contract Contribution is Shareable, Pausable {
 
         var newTotalContributed = contribPeriods[periodIndex].totalContributed;
 
+        // We reached soft cap
         if (newTotalContributed >= contribPeriods[periodIndex].softCapAmount &&
             oldTotalContributed < contribPeriods[periodIndex].softCapAmount)
         {
             contribPeriods[periodIndex].softCapReached = true;
             contribPeriods[periodIndex].endTime = contribPeriods[periodIndex].afterSoftCapDuration.add(now);
             onSoftCapReached(periodIndex, contribPeriods[periodIndex].endTime);
-        } else if (newTotalContributed >= contribPeriods[periodIndex].hardCapAmount &&
+        } else
+        // We reached hard cap
+        if (newTotalContributed >= contribPeriods[periodIndex].hardCapAmount &&
                    oldTotalContributed < contribPeriods[periodIndex].hardCapAmount)
         {
             contribPeriods[periodIndex].hardCapReached = true;
@@ -149,10 +142,12 @@ contract Contribution is Shareable, Pausable {
             contribPeriods[periodIndex].contributorsKeys.length);
     }
 
+    // This function is called by owner after contribution period is over to distribute d0x proportionally
+    // Each contributor should get d0x just once even if this function is called multiple times
+    // Can be called only after contribution period
     function compensateContributors(uint periodIndex, uint offset, uint limit)
         onlyOwner
     {
-        require(!contribPeriods[periodIndex].isCompensated);
         require(contribPeriods[periodIndex].isEnabled);
         require(contribPeriods[periodIndex].endTime < now);
 
@@ -160,6 +155,7 @@ contract Contribution is Shareable, Pausable {
         uint j = 0;
         address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
         uint contributorsCount = contributorsKeys.length;
+
         ContribPeriod contribPeriod = contribPeriods[periodIndex];
         uint ratio = contribPeriodsStakes[periodIndex]
             .mul(1000000000000000000)
@@ -168,18 +164,56 @@ contract Contribution is Shareable, Pausable {
         while (i < contributorsCount && j < limit) {
             address contributorAddress = contributorsKeys[i];
             if (!contribPeriod.contributors[contributorAddress].isCompensated) {
-                uint contributedAmount = contribPeriod.contributors[contributorAddress].amount;
+                var amountContributed = contribPeriod.contributors[contributorAddress].amount;
                 contribPeriod.contributors[contributorAddress].isCompensated = true;
-                D0xToken(d0xToken).transfer(contributorAddress, contributedAmount.mul(ratio).div(1000000000000000000));
+
+                contribPeriod.contributors[contributorAddress].amountCompensated =
+                    amountContributed.mul(ratio).div(1000000000000000000);
+
+                D0xToken(d0xToken).transfer(contributorAddress,
+                    contribPeriod.contributors[contributorAddress].amountCompensated);
+
                 j++;
             }
             i++;
         }
-        if (i == contributorsCount) {
-            contribPeriods[periodIndex].isCompensated = true;
-        }
     }
 
+    // Function to verify if all contributors were compensated
+    function getUncompensatedContributors(uint periodIndex, uint offset, uint limit)
+        constant
+        returns (uint[] contributorIndexes)
+    {
+        var contributorsCount = contribPeriods[periodIndex].contributorsKeys.length;
+
+        if (limit == 0) {
+            limit = contributorsCount;
+        }
+
+        uint i = offset;
+        uint resultsCount = 0;
+        var _contributorIndexes = new uint[](limit);
+        address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
+        ContribPeriod contribPeriod = contribPeriods[periodIndex];
+
+        while (i < contributorsCount && resultsCount < limit) {
+            if (!contribPeriod.contributors[contributorsKeys[i]].isCompensated) {
+                _contributorIndexes[resultsCount] = i;
+                resultsCount++;
+            }
+            i++;
+        }
+
+        contributorIndexes = new uint[](resultsCount);
+        for (i = 0; i < resultsCount; i++) {
+            contributorIndexes[i] = _contributorIndexes[i];
+        }
+        return contributorIndexes;
+    }
+
+    // Function for setting properties of contribution period
+    // Setting first contribution period sets up vesting for founders & advisors
+    // Contribution period should still not be enabled after setting
     function setContribPeriod(
         uint8 i,
         uint softCapAmount,
@@ -222,26 +256,26 @@ contract Contribution is Shareable, Pausable {
 
         address[] memory contributorsKeys;
         ContribPeriod memory contribPeriod = ContribPeriod(softCapAmount, afterSoftCapDuration, hardCapAmount,
-            startTime, endTime, false, false, false, false, 0, contributorsKeys);
+            startTime, endTime, false, false, false, 0, contributorsKeys);
         if (i < contribPeriods.length) {
-            require(!contribPeriods[i].isCompensated);
             require(!contribPeriods[i].isEnabled);
+            require(contribPeriods[i].startTime > now);
             contribPeriods[i] = contribPeriod;
         } else {
             contribPeriods.push(contribPeriod);
         }
     }
 
+    // Used by contribution front-end to obtain contribution period properties
     function getContribPeriod(uint periodIndex)
         constant
-        returns (bool[4] boolValues, uint[8] uintValues)
+        returns (bool[3] boolValues, uint[8] uintValues)
     {
         if (periodIndex < contribPeriods.length) {
             ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
             boolValues[0] = contribPeriod.isEnabled;
-            boolValues[1] = contribPeriod.isCompensated;
-            boolValues[2] = contribPeriod.softCapReached;
-            boolValues[3] = contribPeriod.hardCapReached;
+            boolValues[1] = contribPeriod.softCapReached;
+            boolValues[2] = contribPeriod.hardCapReached;
 
             uintValues[0] = contribPeriod.softCapAmount;
             uintValues[1] = contribPeriod.afterSoftCapDuration;
@@ -256,16 +290,7 @@ contract Contribution is Shareable, Pausable {
         }
     }
 
-    function getContribPeriodContributors(uint periodIndex)
-        constant
-        returns (address[])
-    {
-        if (periodIndex < contribPeriods.length) {
-            ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
-            return contribPeriod.contributorsKeys;
-        }
-    }
-
+    // Used by contribution front-end to obtain contribution contract properties
     function getConfiguration()
         constant
         returns (bool, uint, address, address, address, address, address[] memory, bool)
@@ -278,20 +303,23 @@ contract Contribution is Shareable, Pausable {
             D0xToken(d0xToken).transfersEnabled());
     }
 
+    // Future contribution periods (besides first one) can be cancelled
+    // In that case d0x that would otherwise be distributed will be burned
+    // Must be executed by multisignature
     function cancelContribPeriod(uint periodIndex)
         onlymanyowners(sha3(msg.data))
     {
         require(periodIndex > 0);
         require(periodIndex < contribPeriods.length);
         ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
-        require(!contribPeriod.isCompensated);
         require(!contribPeriod.isEnabled);
         require(contribPeriod.startTime > now);
         require(contribPeriod.endTime > now);
-        contribPeriods[periodIndex].isCompensated = true;
         D0xToken(d0xToken).transfer(0x0, contribPeriodsStakes[periodIndex]);
     }
 
+    // Function to enable contribution period
+    // Must be executed by multisignature
     function enableContribPeriod(uint8 i)
         onlymanyowners(sha3(msg.data))
     {
@@ -300,12 +328,13 @@ contract Contribution is Shareable, Pausable {
         contribPeriods[i].isEnabled = true;
     }
 
+    // Used by contribution front-end to obtain contributor's properties
     function getContributor(uint periodIndex, address contributorAddress)
         constant
-        returns(uint, bool)
+        returns(uint, bool, uint)
     {
         Contributor contributor = contribPeriods[periodIndex].contributors[contributorAddress];
-        return (contributor.amount, contributor.isCompensated);
+        return (contributor.amount, contributor.isCompensated, contributor.amountCompensated);
     }
 
     function setMinContribAmount(uint _minContribAmount)
@@ -315,6 +344,8 @@ contract Contribution is Shareable, Pausable {
         minContribAmount = _minContribAmount;
     }
 
+    // Function to set d0x token contract
+    // When it has no supply we create all of the supply at once, owned by this contract
     function setD0xToken(address _d0xToken)
         onlyOwner
     {
@@ -331,20 +362,15 @@ contract Contribution is Shareable, Pausable {
         }
     }
 
+    // After first contribution period is over and we verified everything went ok, we will enable token transfers
     function enableD0xTokenTransfers()
         onlyOwner
     {
         require(contribPeriods.length > 0);
         require(!D0xToken(d0xToken).transfersEnabled());
         ContribPeriod memory contribPeriod = contribPeriods[0];
-        require(contribPeriod.isCompensated);
+        require(contribPeriod.endTime < now);
         D0xToken(d0xToken).enableTransfers(true);
-    }
-
-    function disableD0xTokenTransfers()
-        onlymanyowners(sha3(msg.data))
-    {
-        D0xToken(d0xToken).enableTransfers(false);
     }
 
     // kills the contract sending everything to `_to`.

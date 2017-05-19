@@ -205,7 +205,6 @@
         (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
         (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
         (is (= false (:contrib-period/enabled? contrib-period)))
-        (is (= false (:contrib-period/compensated? contrib-period)))
         (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
         (is (zero? (:contrib-period/total-contributed contrib-period)))
         (is (zero? (:contrib-period/contributors-count contrib-period))))
@@ -243,7 +242,6 @@
         (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
         (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
         (is (= false (:contrib-period/enabled? contrib-period)))
-        (is (= false (:contrib-period/compensated? contrib-period)))
         (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
         (is (zero? (:contrib-period/total-contributed contrib-period)))
         (is (zero? (:contrib-period/contributors-count contrib-period))))
@@ -305,9 +303,7 @@
               (let [contrib-period (get-contrib-period 0)]
                 (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
                 (is (= (wei->eth contribs-total) (:contrib-period/total-contributed contrib-period)))
-                (is (= (count contributors) (:contrib-period/contributors-count contrib-period))))
-
-              (is (= contributors (contract-call Contribution :get-contrib-period-contributors 0))))
+                (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
 
             (testing "Shouldn't be able to compensate when contrib period is still running"
               (is (thrown? js/Error (state-call! Contribution :compensate-contributors OWNER1 0 [0 0 10]))))
@@ -316,9 +312,12 @@
             (<! wait-ch)
             (mine-block)
 
+            (is (= (count contributors) (count (contract-call Contribution :get-uncompensated-contributors 0 0 0))))
+
             (testing "Contributors should be compensated with d0x tokens after contrib period ended"
               (state-call! Contribution :compensate-contributors OWNER1 0 [0 0 10])
 
+              (is (= 0 (count (contract-call Contribution :get-uncompensated-contributors 0 0 0))))
               (doseq [[contributor expected-d0x] (zipmap contributors expected-d0x-balances)]
                 (is (eq? expected-d0x (contract-call D0xToken :balance-of contributor))))
               (is (= 55000000 (wei->eth d0x-compensated-total))))
@@ -327,10 +326,7 @@
             (testing "Shouldn't be able to enable ended contrib period"
               (is (not (contrib-period-running?)))
               (state-call! Contribution :enable-contrib-period OWNER1 0 [0])
-              (is (thrown? js/Error (state-call! Contribution :enable-contrib-period OWNER2 0 [0]))))
-
-            (testing "Contrib period should be marked as compensated"
-              (is (= true (:contrib-period/compensated? (get-contrib-period 0)))))))
+              (is (thrown? js/Error (state-call! Contribution :enable-contrib-period OWNER2 0 [0]))))))
 
         (testing "Contribution round 2"
           (let [wallet-balance-before (account-eth-balance WALLET)
@@ -365,7 +361,6 @@
               (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
               (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
               (is (= false (:contrib-period/enabled? contrib-period)))
-              (is (= false (:contrib-period/compensated? contrib-period)))
               (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
               (is (zero? (:contrib-period/total-contributed contrib-period)))
               (is (zero? (:contrib-period/contributors-count contrib-period))))
@@ -398,13 +393,13 @@
                   (is (= (wei->eth contribs-total) (:contrib-period/total-contributed contrib-period)))
                   (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
 
-              (is (= contributors (contract-call Contribution :get-contrib-period-contributors 1)))
-
               (wait (inc after-soft-cap-duration) wait-ch)
               (<! wait-ch)
               (mine-block)
 
               (is (not (contrib-period-running?)))
+
+              (is (= (count contributors) (count (contract-call Contribution :get-uncompensated-contributors 1 0 0))))
 
               (testing "Contributors should be compensated partially (first half) with d0x tokens"
                 (let [half-count (/ (count contributions) 2)
@@ -412,6 +407,8 @@
                       expected-d0x-balances (take half-count expected-d0x-balances)
                       contributors (take half-count contributors)]
                   (state-call! Contribution :compensate-contributors OWNER1 0 [1 0 half-count])
+
+                  (is (= half-count (count (contract-call Contribution :get-uncompensated-contributors 1 0 0))))
                   (doseq [[contributor expected-d0x] (zipmap contributors expected-d0x-balances)]
                     (is (eq? expected-d0x (contract-call D0xToken :balance-of contributor)))))
 
@@ -424,6 +421,8 @@
                       expected-d0x-balances (take-last half-count expected-d0x-balances)
                       contributors (take-last half-count contributors)]
                   (state-call! Contribution :compensate-contributors OWNER1 0 [1 0 1000])
+
+                  (is (= 0 (count (contract-call Contribution :get-uncompensated-contributors 1 0 0))))
                   (doseq [[contributor expected-d0x] (zipmap contributors expected-d0x-balances)]
                     (is (eq? expected-d0x (contract-call D0xToken :balance-of contributor))))))
 
@@ -496,6 +495,7 @@
                   (is (= true (:contrib-period/soft-cap-reached? contrib-period)))
                   (is (= true (:contrib-period/hard-cap-reached? contrib-period)))))
 
+
               (is (not (contrib-period-running?)))
 
               (testing "After hitting hard cap users shouldn't be able to contribute"
@@ -506,8 +506,14 @@
               (<! wait-ch)
               (mine-block)
 
+              (is (= 2 (count (contract-call Contribution :get-uncompensated-contributors 0 0 0))))
+
               (testing "Contributors should be compensated with d0x tokens after contrib period ended"
                 (state-call! Contribution :compensate-contributors OWNER1 0 [0 0 10]))
+
+              (mine-block)
+
+              (is (= 0 (count (contract-call Contribution :get-uncompensated-contributors 0 0 0))))
 
               (testing "Trading d0x is still disabled"
                 (is (thrown? js/Error (state-call! D0xToken :transfer 11 0 [(account 12) (eth->wei 1)]))))

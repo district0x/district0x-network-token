@@ -6,7 +6,7 @@
 
 (def current-contrib-period 0)
 
-(def min-contrib-amount 1)
+(def min-contrib-amount 0.1)
 
 (def currency-code->id
   {:ETH 0
