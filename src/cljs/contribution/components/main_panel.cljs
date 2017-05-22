@@ -428,7 +428,7 @@
           "Copyright © 2017 district0x"]
          [:div
           {:style styles/full-width}
-          [:img {:src "../images/district0x-logo-title-white.svg"
+          [:img {:src "./images/district0x-logo-title-white.svg"
                  :style {:height 15}}]]]))))
 
 (defn contribution-panel []
@@ -443,7 +443,7 @@
    {:href "http://district0x.io"}
    [:img
     {:style styles/logo
-     :src "../images/district0x-logo.svg"}]])
+     :src "./images/district0x-logo.svg"}]])
 
 (defn main-panel []
   (let [connection-error? (subscribe [:blockchain/connection-error?])
