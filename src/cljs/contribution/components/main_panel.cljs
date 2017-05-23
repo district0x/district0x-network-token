@@ -41,7 +41,9 @@
   [center-layout
    [paper
     [row-plain
-     {:center "xs"}
+     {:center "xs"
+      :middle "xs"
+      :style {:min-height "400px"}}
      [:h3 "We couldn't find district0x Contribution smart contracts. Are you sure you are connected to Ethereum Mainnet?"]]]])
 
 (defn app-bar-right-elements []
@@ -353,16 +355,19 @@
          [:h3
           {:style (merge styles/full-width
                          {:color styles/theme-green})}
-          @contribution-address]
+          (if enabled?
+            @contribution-address
+            "(Contract address will be published soon)")]
          [:div
           {:style (merge styles/full-width
                          {:color styles/theme-orange
                           :font-size "0.9em"})}
-          (if stopped?
-            "(Contribution was temporarily paused due to emergency)"
-            ({:contrib-period-status/not-started "(Contribution period has not started yet)"
-              :contrib-period-status/ended "(Contribution period has been finished)"}
-              @contrib-period-status))]
+          (when enabled?
+            (if stopped?
+              "(Contribution was temporarily paused due to emergency)"
+              ({:contrib-period-status/not-started "(Contribution period has not started yet)"
+                :contrib-period-status/ended "(Contribution period has been finished)"}
+                @contrib-period-status)))]
          [:div
           {:style (merge styles/full-width
                          styles/margin-top-gutter-less)}

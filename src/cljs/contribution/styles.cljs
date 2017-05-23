@@ -138,6 +138,8 @@
 (def stats-tile-border-top
   {:border-top "0.5px solid rgba(255, 255, 255, 0.1)"})
 
+(def d0x-symbol
+  {:font-family "filson-soft, sans-serif"})
 
 (def stats-tile
   {:text-align "center"

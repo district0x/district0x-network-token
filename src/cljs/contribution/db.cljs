@@ -88,8 +88,8 @@
 
 (def default-db
   {:web3 nil
-   :load-node-addresses? true
-   :node-url #_"https://mainnet.infura.io/" #_"http://localhost:8545" "http://localhost:8549" #_"http://192.168.0.16:8545/" #_"http://localhost:8550"
+   :load-node-addresses? false
+   :node-url "https://mainnet.infura.io/" #_"http://localhost:8545" #_ "http://localhost:8549" #_"http://192.168.0.16:8545/" #_"http://localhost:8550"
    :provides-web3? false
    :contracts-not-found? false
    :window/width-size (u/get-window-width-size js/window.innerWidth)
@@ -98,8 +98,8 @@
               :message ""
               :auto-hide-duration 5000
               :on-request-close #(dispatch [:snackbar/close])}
-   :eth/contracts {:contribution {:name "Contribution" :address "0x0000000000000000000000000000000000000000"}
-                   :d0x-token {:name "D0xToken" :address "0x0000000000000000000000000000000000000000"}}
+   :eth/contracts {:contribution {:name "District0xContribution" :address "0x101b9e8fb11fc340235ba75946a13f0d73ae59be"}
+                   :d0x-token {:name "D0xToken" :address "0x9dddfb55d772f5c80a479d2f168e2cfe60b12b92"}}
    :my-addresses []
    :active-address nil
    :active-user-events nil

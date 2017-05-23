@@ -16,7 +16,7 @@ contract StandardToken is BasicToken, ERC20 {
 
   mapping (address => mapping (address => uint)) allowed;
 
-  function transferFrom(address _from, address _to, uint _value) {
+  function transferFrom(address _from, address _to, uint _value) onlyPayloadSize(3 * 32) {
     var _allowance = allowed[_from][msg.sender];
 
     // Check is not needed because sub(_allowance, _value) will already throw if this condition is not met
@@ -29,6 +29,13 @@ contract StandardToken is BasicToken, ERC20 {
   }
 
   function approve(address _spender, uint _value) {
+
+    // To change the approve amount you first have to reduce the addresses`
+    //  allowance to zero by calling `approve(_spender, 0)` if it is not
+    //  already 0 to mitigate the race condition described here:
+    //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
+    if ((_value != 0) && (allowed[msg.sender][_spender] != 0)) throw;
+
     allowed[msg.sender][_spender] = _value;
     Approval(msg.sender, _spender, _value);
   }
@@ -38,14 +45,13 @@ contract StandardToken is BasicToken, ERC20 {
   }
 
   function approveAndCall(address _spender, uint256 _value, bytes _extraData) returns (bool success) {
-    allowed[msg.sender][_spender] = _value;
-    Approval(msg.sender, _spender, _value);
+      allowed[msg.sender][_spender] = _value;
+      Approval(msg.sender, _spender, _value);
 
-    //call the receiveApproval function on the contract you want to be notified. This crafts the function signature manually so one doesn't have to include a contract in here just for this.
-    //receiveApproval(address _from, uint256 _value, address _tokenContract, bytes _extraData)
-    //it is assumed that when does this that the call *should* succeed, otherwise one would use vanilla approve instead.
-    if(!_spender.call(bytes4(bytes32(sha3("receiveApproval(address,uint256,address,bytes)"))), msg.sender, _value, this, _extraData)) { throw; }
-    return true;
-  }
-
+      //call the receiveApproval function on the contract you want to be notified. This crafts the function signature manually so one doesn't have to include a contract in here just for this.
+      //receiveApproval(address _from, uint256 _value, address _tokenContract, bytes _extraData)
+      //it is assumed that when does this that the call *should* succeed, otherwise one would use vanilla approve instead.
+      if(!_spender.call(bytes4(bytes32(sha3("receiveApproval(address,uint256,address,bytes)"))), msg.sender, _value, this, _extraData)) { throw; }
+      return true;
+    }
 }

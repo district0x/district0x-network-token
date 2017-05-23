@@ -5,7 +5,7 @@ import "./D0xToken.sol";
 import "./Shareable.sol";
 import "./Pausable.sol";
 
-contract Contribution is Shareable, Pausable {
+contract District0xContribution is Shareable, Pausable {
     using SafeMath for uint;
 
     address public d0xToken;
@@ -58,7 +58,7 @@ contract Contribution is Shareable, Pausable {
     event onSoftCapReached(uint indexed contribPeriodIndex, uint endTime);
     event onHardCapReached(uint indexed contribPeriodIndex, uint endTime);
 
-    function Contribution(
+    function District0xContribution(
         address[] _owners,
         uint _required,
         address _wallet,
@@ -293,14 +293,16 @@ contract Contribution is Shareable, Pausable {
     // Used by contribution front-end to obtain contribution contract properties
     function getConfiguration()
         constant
-        returns (bool, uint, address, address, address, address, address[] memory, bool)
+        returns (bool, uint, address, address, address, address, address[] _advisers, bool transfersEnabled)
     {
-        var _advisers = new address[](advisers.length);
+        _advisers = new address[](advisers.length);
         for (uint i = 0; i < advisers.length; i++) {
             _advisers[i] = advisers[i];
         }
-        return (stopped, required, wallet, founder1, founder2, earlySponsor, _advisers,
-            D0xToken(d0xToken).transfersEnabled());
+        if (d0xToken != 0x0) {
+            transfersEnabled = D0xToken(d0xToken).transfersEnabled();
+        }
+        return (stopped, required, wallet, founder1, founder2, earlySponsor, _advisers, transfersEnabled);
     }
 
     // Future contribution periods (besides first one) can be cancelled

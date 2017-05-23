@@ -52,7 +52,7 @@
 
 (def big-num->eth-num (comp big-num->num wei->eth))
 
-(def max-gas-limit 4000000)
+(def max-gas-limit 3800000)
 
 (defn timestamp-js->sol [x]
   (/ x 1000))

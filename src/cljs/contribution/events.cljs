@@ -43,7 +43,9 @@
 
 (defn contract-xhrio [contract-name code-type on-success on-failure]
   {:method :get
-   :uri (gstring/format "./contracts/build/%s.%s?v=%s" contract-name (name code-type) constants/contracts-version)
+   :uri (gstring/format "./contracts/build/%s.%s?v=%s" contract-name (name code-type) (if goog.DEBUG
+                                                                                        (.getTime (js/Date.))
+                                                                                        constants/contracts-version))
    :timeout 6000
    :response-format (if (= code-type :abi) (ajax/json-response-format) (ajax/text-response-format))
    :on-success on-success
@@ -106,6 +108,12 @@
                                :events [:eth-contracts-loaded :blockchain/my-addresses-loaded]
                                :dispatch-n [[:contract.contribution/addresses->owners?]
                                             [:contract.d0x-token/watch-balances]]
+                               :halt? true}
+                              {:when :seen?
+                               :events [:eth-contracts-loaded]
+                               :dispatch-n [[:contract.contribution/get-contrib-period constants/current-contrib-period]
+                                            [:contract.contribution/get-configuration]
+                                            [:contract.contribution/setup-event-listeners]]
                                :halt? true}]}
          :window/on-resize {:dispatch [:window/on-resize]
                             :resize-interval 166}
@@ -167,9 +175,7 @@
   :eth-contracts-loaded
   interceptors
   (fn [{:keys [db]}]
-    {:dispatch-n [[:contract.contribution/get-contrib-period constants/current-contrib-period]
-                  [:contract.contribution/get-configuration]
-                  [:contract.contribution/setup-event-listeners]]}))
+    ))
 
 (reg-event-fx
   :contracts/deploy-all
@@ -274,9 +280,14 @@
   :contract.contribution/on-contribution
   interceptors
   (fn [{:keys [db]} [{:keys [:contrib-period-index :total-contributed :contributors-count]}]]
-    {:db (update-in db [:contribution/contrib-periods (u/big-num->num contrib-period-index)] merge
-                    {:contrib-period/total-contributed (u/big-num->eth-num total-contributed)
-                     :contrib-period/contributors-count (u/big-num->num contributors-count)})}))
+    (let [contrib-period-index (u/big-num->num contrib-period-index)
+          total-contributed (u/big-num->eth-num total-contributed)
+          contributors-count (u/big-num->num contributors-count)]
+      (when (< (get-in db [:contribution/contrib-periods contrib-period-index :contrib-period/total-contributed])
+               total-contributed)
+        {:db (update-in db [:contribution/contrib-periods contrib-period-index] merge
+                        {:contrib-period/total-contributed total-contributed
+                         :contrib-period/contributors-count contributors-count})}))))
 
 (reg-event-fx
   :contract.contribution/on-soft-cap-reached
@@ -313,7 +324,7 @@
                 {:contract-key :contribution
                  :contract-method :set-contrib-period
                  :args (u/contrib-period-args args)
-                 :transaction-opts {:gas 4000000
+                 :transaction-opts {:gas 3800000
                                     :from (if address-index
                                             (nth (:my-addresses db) address-index)
                                             (:active-address db))}
@@ -586,13 +597,14 @@
                              :events [:eth-contracts-loaded]
                              :dispatch-n [[:contracts/deploy-all
                                            (merge
-                                             {:contribution/owners (take 2 my-addresses)
-                                              :contribution/required-count 1
-                                              :contribution/founder1 (first my-addresses)
-                                              :contribution/founder2 (second my-addresses)
-                                              :contribution/early-sponsor (first my-addresses)
-                                              :contribution/wallet (nth my-addresses 3)
-                                              :contribution/advisers (drop 4 (take 8 my-addresses))}
+                                             (when (<= 10 my-addresses)
+                                               {:contribution/owners (take 2 my-addresses)
+                                                :contribution/required-count 1
+                                                :contribution/founder1 (first my-addresses)
+                                                :contribution/founder2 (second my-addresses)
+                                                :contribution/early-sponsor (first my-addresses)
+                                                :contribution/wallet (nth my-addresses 3)
+                                                :contribution/advisers (drop 4 (take 8 my-addresses))})
                                              contribution-args)
                                            address-index]]
                              :halt? true}]}})))
@@ -606,8 +618,8 @@
                                            {:contribution/period-index 0
                                             :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 5)))
                                             :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
-                                            :contrib-period/soft-cap-amount (u/eth->wei 1)
-                                            :contrib-period/hard-cap-amount (u/eth->wei 2)
+                                            :contrib-period/soft-cap-amount (u/eth->wei 5)
+                                            :contrib-period/hard-cap-amount (u/eth->wei 10)
                                             :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 1))}
                                            0]}
                       {:ms 3000 :dispatch [:contract.contribution/enable-contrib-period {:contribution/period-index 0}]}]}))
@@ -728,6 +740,12 @@
     {:web3-fx.contract/constant-fns
      {:fns [(concat [(get-instance db contract-key)] args [:log :log-error])]}}))
 
+(reg-event-fx
+  :clean-localstorage
+  interceptors
+  (fn [_]
+    {:localstorage nil}))
+
 (comment
   (dispatch [:contract.contribution/set-contrib-period
              {:contribution/period-index 0
@@ -746,6 +764,15 @@
               :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 10))
               :contrib-period/hard-cap-amount (u/eth->wei 10)}
              0])
+
+  (dispatch [:contract.contribution/set-contrib-period
+             {:contribution/period-index 0
+              :contrib-period/start-time (cljs-time.coerce/to-epoch (cljs-time.core/date-time 2017 7 5 15))
+              :contrib-period/end-time (cljs-time.coerce/to-epoch (t/plus (cljs-time.core/date-time 2017 7 5 15)
+                                                                          (t/weeks 2)))
+              :contrib-period/soft-cap-amount (u/eth->wei 55000)
+              :contrib-period/after-soft-cap-duration (t/in-seconds (t/days 2))
+              :contrib-period/hard-cap-amount (u/eth->wei 1000000)}])
 
   (dispatch [:contract/call :contribution :d0x-token])
   (dispatch [:contract/call :d0x-token :token-grants-count (:contribution/founder1 @re-frame.db/app-db)])
