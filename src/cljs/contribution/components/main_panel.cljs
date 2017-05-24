@@ -460,6 +460,16 @@
       [ui/mui-theme-provider
        {:mui-theme styles/mui-theme}
        [:div
+        {:style {:padding-bottom 20
+                 :overflow :hidden}}
+        [:img {:src "./images/green-blob2.svg"
+               :style styles/blob4}]
+        [:img {:src "./images/cyan-blob.svg"
+               :style styles/blob1}]
+        [:img {:src "./images/green-blob1.svg"
+               :style styles/blob2}]
+        [:img {:src "./images/green-blobs.svg"
+               :style styles/blob3}]
         [ui/app-bar
          {:show-menu-icon-button false
           :style styles/app-bar

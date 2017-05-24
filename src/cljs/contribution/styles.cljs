@@ -207,3 +207,34 @@
    :border-radius "20px"
    :color theme-blue
    :font-weight "bold"})
+
+(def blob1
+  {:position :absolute
+   :top 200
+   :left "-40%"
+   :z-index -1
+   :height 980
+   :margin-bottom 40})
+
+(def blob2
+  {:position :absolute
+   :top 300
+   :right "-30%"
+   :z-index -1
+   :height 800
+   :overflow :hidden})
+
+(def blob3
+  {:position :absolute
+   :right "14%"
+   :z-index -1
+   :height 250
+   :top 1030
+   :margin-bottom 40})
+
+(def blob4
+  {:position :absolute
+   :right "3%"
+   :z-index -1
+   :height 60
+   :top 150})

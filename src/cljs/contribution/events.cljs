@@ -597,7 +597,7 @@
                              :events [:eth-contracts-loaded]
                              :dispatch-n [[:contracts/deploy-all
                                            (merge
-                                             (when (<= 10 my-addresses)
+                                             (when (<= 10 (count my-addresses))
                                                {:contribution/owners (take 2 my-addresses)
                                                 :contribution/required-count 1
                                                 :contribution/founder1 (first my-addresses)
