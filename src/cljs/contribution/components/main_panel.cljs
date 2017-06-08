@@ -445,7 +445,7 @@
 
 (defn logo []
   [:a
-   {:href "http://district0x.io"}
+   {:href "https://district0x.io"}
    [:img
     {:style styles/logo
      :src "./images/district0x-logo.svg"}]])
