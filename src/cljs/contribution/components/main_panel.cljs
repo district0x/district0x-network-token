@@ -418,7 +418,7 @@
              "Please note: " (u/format-eth stake) " DNT tokens will be divided and distributed amongst all
             participants, each receiving an allocation proportional to the amount they contributed, relative to the
             total collected."]
-            [:div
+            #_ [:div
              {:style (merge styles/full-width
                             styles/margin-top-gutter)}
              [:a {:href "#"
@@ -461,7 +461,8 @@
        {:mui-theme styles/mui-theme}
        [:div
         {:style {:padding-bottom 20
-                 :overflow :hidden}}
+                 :overflow :hidden
+                 :position :relative}}
         [:img {:src "./images/green-blob2.svg"
                :style styles/blob4}]
         [:img {:src "./images/cyan-blob.svg"
