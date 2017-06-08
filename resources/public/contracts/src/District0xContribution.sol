@@ -15,13 +15,13 @@ contract District0xContribution is Shareable, Pausable {
     address public earlySponsor;
     address[] public advisers;
 
-    uint public constant FOUNDER1_STAKE = 35000000000000000000000000; // 35M
-    uint public constant FOUNDER2_STAKE = 10000000000000000000000000; // 10M
+    uint public constant FOUNDER1_STAKE = 120000000000000000000000000; // 120M
+    uint public constant FOUNDER2_STAKE = 80000000000000000000000000; // 80M
     uint public constant EARLY_SPONSOR_STAKE = 5000000000000000000000000; // 5M
-    uint public constant ADVISER_STAKE = 1250000000000000000000000; // 1.25M
-    uint public constant CONTRIB_PERIOD1_STAKE = 55000000000000000000000000; // 55M
-    uint public constant CONTRIB_PERIOD2_STAKE = 65000000000000000000000000; // 65M
-    uint public constant CONTRIB_PERIOD3_STAKE = 75000000000000000000000000; // 75M
+    uint public constant ADVISER_STAKE = 5000000000000000000000000; // 5M
+    uint public constant CONTRIB_PERIOD1_STAKE = 600000000000000000000000000; // 600M
+    uint public constant CONTRIB_PERIOD2_STAKE = 140000000000000000000000000; // 140M
+    uint public constant CONTRIB_PERIOD3_STAKE = 40000000000000000000000000; // 40M
 
     uint8 public constant CONTRIB_PERIODS = 3;
 

@@ -98,8 +98,8 @@
               :message ""
               :auto-hide-duration 5000
               :on-request-close #(dispatch [:snackbar/close])}
-   :eth/contracts {:contribution {:name "District0xContribution" :address "0x101b9e8fb11fc340235ba75946a13f0d73ae59be"}
-                   :d0x-token {:name "D0xToken" :address "0x9dddfb55d772f5c80a479d2f168e2cfe60b12b92"}}
+   :eth/contracts {:contribution {:name "District0xContribution" :address "0x53ccdb064c248bb247d2449332d7644c4f3a253d"}
+                   :d0x-token {:name "D0xToken" :address "0x4799421c779f8f0b85b21a12ba1a9aaae21311eb"}}
    :my-addresses []
    :active-address nil
    :active-user-events nil

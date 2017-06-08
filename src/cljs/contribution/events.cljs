@@ -767,18 +767,18 @@
 
   (dispatch [:contract.contribution/set-contrib-period
              {:contribution/period-index 0
-              :contrib-period/start-time (cljs-time.coerce/to-epoch (cljs-time.core/date-time 2017 7 5 15))
-              :contrib-period/end-time (cljs-time.coerce/to-epoch (t/plus (cljs-time.core/date-time 2017 7 5 15)
+              :contrib-period/start-time (cljs-time.coerce/to-epoch (cljs-time.core/date-time 2017 7 18 15))
+              :contrib-period/end-time (cljs-time.coerce/to-epoch (t/plus (cljs-time.core/date-time 2017 7 18 15)
                                                                           (t/weeks 2)))
-              :contrib-period/soft-cap-amount (u/eth->wei 55000)
+              :contrib-period/soft-cap-amount (u/eth->wei 38400)
               :contrib-period/after-soft-cap-duration (t/in-seconds (t/days 2))
-              :contrib-period/hard-cap-amount (u/eth->wei 1000000)}])
+              :contrib-period/hard-cap-amount (u/eth->wei 191900)}])
 
   (dispatch [:contract/call :contribution :d0x-token])
   (dispatch [:contract/call :d0x-token :token-grants-count (:contribution/founder1 @re-frame.db/app-db)])
   (dispatch [:contract/call :d0x-token :token-grant (:contribution/founder1 @re-frame.db/app-db) 1])
   (dispatch [:contract/call :contribution :get-running-contrib-period])
-  (dispatch [:contract/call :contribution :get-times])
+  (dispatch [:contract/call :contribution :get-contrib-period 0])
   (dispatch [:contract.contribution/enable-contrib-period
              {:contribution/period-index 0}
              (last (:my-addresses @re-frame.db/app-db))])

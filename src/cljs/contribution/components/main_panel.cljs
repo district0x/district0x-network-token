@@ -290,7 +290,7 @@
               (/ stake 1000000) " Mil"]
              [:h3
               {:style styles/stats-tile-amount-subtitle}
-              "d0x tokens"]]
+              "DNT tokens"]]
             [ui/circular-progress])]]))))
 
 (defn contribution-soft-cap-progress []
@@ -415,7 +415,7 @@
            [:div
             [:div
              {:style styles/distribution-note}
-             "Please note: " (u/format-eth stake) " d0x tokens will be divided and distributed amongst all
+             "Please note: " (u/format-eth stake) " DNT tokens will be divided and distributed amongst all
             participants, each receiving an allocation proportional to the amount they contributed, relative to the
             total collected."]
             [:div

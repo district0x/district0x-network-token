@@ -7,7 +7,7 @@ contract D0xToken is VestedToken {
     string public constant symbol = "d0x";
     uint public constant decimals = 18;
 
-    uint public constant MAX_TOTAL_TOKEN_AMOUNT = 250000000000000000000000000; // 250M
+    uint public constant MAX_TOTAL_TOKEN_AMOUNT = 1000000000000000000000000000; // 1B
 
     address public minter;
     bool public transfersEnabled = false;

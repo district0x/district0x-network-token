@@ -116,7 +116,7 @@
 
 (defn format-d0x-with-symbol [x]
   (when x
-    (str (format-eth x) " d0x")))
+    (str (format-eth x) " DNT")))
 
 (defn format-humanize [x]
   (cond
