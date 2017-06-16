@@ -16,3 +16,4 @@ contribution.iml
 /test-fig-out/
 /test-fig-compiled/
 /test-compiled/
+/node_modules/
