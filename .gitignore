@@ -11,7 +11,6 @@ pom.xml.asc
 .hg/
 .idea
 contribution.iml
-/resources/public/contracts/build/*.bin
 /figwheel_server.log
 /resources/public/js/compiled/
 /test-fig-out/
