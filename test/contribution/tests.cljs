@@ -112,6 +112,7 @@
          :abi (fetch-abi "District0xContribution")
          :bin (fetch-bin "District0xContribution")
          :res-ch contrib-ch
+         :gas 4500000
          :args [[owner1 owner2] 2 wallet founder1 founder2 early-sponsor [adviser1 adviser2 legal-adviser community-advisors]]})
 
       (set! Contribution (<! contrib-ch))

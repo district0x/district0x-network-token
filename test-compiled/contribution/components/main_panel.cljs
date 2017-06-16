@@ -282,25 +282,43 @@
   (let [current-contrib-period (subscribe [:contribution/current-contrib-period])]
     (fn []
       (let [{:keys [:contrib-period/total-contributed :contrib-period/soft-cap-amount
-                    :contrib-period/after-soft-cap-duration]} @current-contrib-period]
+                    :contrib-period/after-soft-cap-duration :contrib-period/hard-cap-amount]} @current-contrib-period]
         (when (and total-contributed soft-cap-amount after-soft-cap-duration)
           [row
            {:center "xs"
             :style styles/margin-top-gutter-more}
-           [ui/linear-progress
-            {:mode "determinate"
-             :style styles/soft-cap-progress
-             :color styles/theme-orange
-             :max (or soft-cap-amount 6000000)
-             :value total-contributed}]
-           [:h3
-            {:style styles/full-width}
-            "Soft Cap " (js/parseInt total-contributed) "/" (or soft-cap-amount 0) " ETH"]
-           [:div
-            {:style (merge styles/full-width
-                           styles/fade-white-text)}
-            "After soft cap is reached, the contribution period will be closed in " (t/in-hours (t/seconds after-soft-cap-duration))
-            " hours"]])))))
+           (if (< total-contributed soft-cap-amount)
+             [:div
+              {:style styles/full-width}
+              [ui/linear-progress
+               {:mode "determinate"
+                :style styles/cap-progress
+                :color styles/theme-orange
+                :max soft-cap-amount
+                :value total-contributed}]
+              [:h3
+               {:style styles/full-width}
+               "Soft Cap " (js/parseInt total-contributed) "/" (or soft-cap-amount 0) " ETH"]
+              [:div
+               {:style (merge styles/full-width
+                              styles/fade-white-text)}
+               "After soft cap is reached, the contribution period will be closed in " (t/in-hours (t/seconds after-soft-cap-duration))
+               " hours"]]
+             [:div
+              {:style styles/full-width}
+              [ui/linear-progress
+               {:mode "determinate"
+                :style styles/cap-progress
+                :color styles/theme-orange
+                :max hard-cap-amount
+                :value total-contributed}]
+              [:h3
+               {:style styles/full-width}
+               "Hard Cap " (js/parseInt total-contributed) "/" (or hard-cap-amount 0) " ETH"]
+              [:div
+               {:style (merge styles/full-width
+                              styles/fade-white-text)}
+               "After hard cap is reached, no more contributions will be accepted"]])])))))
 
 (defn- external-link [body href]
   [:a
@@ -374,7 +392,7 @@
             :disabled (or (= :contrib-period-status/ended @contrib-period-status)
                           (not enabled?)
                           stopped?)
-            :on-change #(dispatch [:form/set-value :form.contribution/contribute :contribution/amount %2])}]
+            :on-change #(dispatch [:district0x.form/set-value :form.contribution/contribute :contribution/amount %2])}]
           (if-not loading?
             [ui/raised-button
              {:primary true

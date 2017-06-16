@@ -53,9 +53,10 @@
   (merge
     district0x.db/default-db
     {:load-node-addresses? false
-     :node-url "https://mainnet.infura.io/" #_"http://localhost:8549"
-     :smart-contracts {:contribution {:name "District0xContribution" :address "0x53ccdb064c248bb247d2449332d7644c4f3a253d"}
-                       :dnt-token {:name "District0xNetworkToken" :address "0x4799421c779f8f0b85b21a12ba1a9aaae21311eb"}}
+     :node-url "https://mainnet.infura.io/" #_ "http://localhost:8549"
+     :smart-contracts {:contribution {:name "District0xContribution" :address "0xfbfe6376417ec60322909ae8b9de3ee3de268d9d"}
+                       :dnt-token {:name "District0xNetworkToken" :address "0x9188ca329c7a6bb7f9fd8346624cb6e14487d557"}
+                       :mini-me-token-factory {:name "MiniMeTokenFactory" :address "0xe0dd94dd042602c39103867bd31bcfce24bce460"}}
      :now (t/now)
 
      :dnt-token/transfers-enabled? false

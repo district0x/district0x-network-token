@@ -213,7 +213,7 @@
   {:width "100%"
    :font-size "1.2em"})
 
-(def soft-cap-progress
+(def cap-progress
   (merge
     margin-bottom-gutter-less
     {:height "10px"

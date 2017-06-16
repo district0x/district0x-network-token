@@ -40,13 +40,13 @@ return new cljs.core.Keyword(null,"smart-contracts","smart-contracts",1766679213
 re_frame.core.reg_sub.call(null,new cljs.core.Keyword("district0x","balances","district0x/balances",434220491),(function (db,_){
 return new cljs.core.Keyword(null,"balances","balances",-1047003019).cljs$core$IFn$_invoke$arity$1(db);
 }));
-re_frame.core.reg_sub.call(null,new cljs.core.Keyword("district0x","active-address-balance","district0x/active-address-balance",658715129),new cljs.core.Keyword(null,"<-","<-",760412998),new cljs.core.PersistentVector(null, 1, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword("district0x","active-address","district0x/active-address",-331101118)], null),new cljs.core.Keyword(null,"<-","<-",760412998),new cljs.core.PersistentVector(null, 1, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword("district0x","balances","district0x/balances",434220491)], null),(function (p__36257,p__36258){
-var vec__36259 = p__36257;
-var active_address = cljs.core.nth.call(null,vec__36259,(0),null);
-var balances = cljs.core.nth.call(null,vec__36259,(1),null);
-var vec__36262 = p__36258;
-var _ = cljs.core.nth.call(null,vec__36262,(0),null);
-var token = cljs.core.nth.call(null,vec__36262,(1),null);
+re_frame.core.reg_sub.call(null,new cljs.core.Keyword("district0x","active-address-balance","district0x/active-address-balance",658715129),new cljs.core.Keyword(null,"<-","<-",760412998),new cljs.core.PersistentVector(null, 1, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword("district0x","active-address","district0x/active-address",-331101118)], null),new cljs.core.Keyword(null,"<-","<-",760412998),new cljs.core.PersistentVector(null, 1, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword("district0x","balances","district0x/balances",434220491)], null),(function (p__36273,p__36274){
+var vec__36275 = p__36273;
+var active_address = cljs.core.nth.call(null,vec__36275,(0),null);
+var balances = cljs.core.nth.call(null,vec__36275,(1),null);
+var vec__36278 = p__36274;
+var _ = cljs.core.nth.call(null,vec__36278,(0),null);
+var token = cljs.core.nth.call(null,vec__36278,(1),null);
 return cljs.core.get_in.call(null,balances,new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [active_address,(function (){var or__11700__auto__ = token;
 if(cljs.core.truth_(or__11700__auto__)){
 return or__11700__auto__;
