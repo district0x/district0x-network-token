@@ -5,41 +5,41 @@ goog.require('pathetic.core');
 goog.require('clojure.string');
 goog.require('goog.Uri');
 cemerick.url.url_encode = (function cemerick$url$url_encode(string){
-var G__21486 = string;
-var G__21486__$1 = (((G__21486 == null))?null:[cljs.core.str(G__21486)].join(''));
-var G__21486__$2 = (((G__21486__$1 == null))?null:encodeURIComponent(G__21486__$1));
-if((G__21486__$2 == null)){
+var G__24903 = string;
+var G__24903__$1 = (((G__24903 == null))?null:[cljs.core.str(G__24903)].join(''));
+var G__24903__$2 = (((G__24903__$1 == null))?null:encodeURIComponent(G__24903__$1));
+if((G__24903__$2 == null)){
 return null;
 } else {
-return G__21486__$2.replace("+","%20");
+return G__24903__$2.replace("+","%20");
 }
 });
 cemerick.url.url_decode = (function cemerick$url$url_decode(string){
-var G__21488 = string;
-var G__21488__$1 = (((G__21488 == null))?null:[cljs.core.str(G__21488)].join(''));
-if((G__21488__$1 == null)){
+var G__24905 = string;
+var G__24905__$1 = (((G__24905 == null))?null:[cljs.core.str(G__24905)].join(''));
+if((G__24905__$1 == null)){
 return null;
 } else {
-return decodeURIComponent(G__21488__$1);
+return decodeURIComponent(G__24905__$1);
 }
 });
 cemerick.url.map__GT_query = (function cemerick$url$map__GT_query(m){
-var G__21494 = cljs.core.seq.call(null,m);
-var G__21494__$1 = (((G__21494 == null))?null:cljs.core.sort.call(null,G__21494));
-var G__21494__$2 = (((G__21494__$1 == null))?null:cljs.core.map.call(null,((function (G__21494,G__21494__$1){
-return (function (p__21495){
-var vec__21496 = p__21495;
-var k = cljs.core.nth.call(null,vec__21496,(0),null);
-var v = cljs.core.nth.call(null,vec__21496,(1),null);
+var G__24911 = cljs.core.seq.call(null,m);
+var G__24911__$1 = (((G__24911 == null))?null:cljs.core.sort.call(null,G__24911));
+var G__24911__$2 = (((G__24911__$1 == null))?null:cljs.core.map.call(null,((function (G__24911,G__24911__$1){
+return (function (p__24912){
+var vec__24913 = p__24912;
+var k = cljs.core.nth.call(null,vec__24913,(0),null);
+var v = cljs.core.nth.call(null,vec__24913,(1),null);
 return new cljs.core.PersistentVector(null, 3, 5, cljs.core.PersistentVector.EMPTY_NODE, [cemerick.url.url_encode.call(null,cljs.core.name.call(null,k)),"=",cemerick.url.url_encode.call(null,[cljs.core.str(v)].join(''))], null);
-});})(G__21494,G__21494__$1))
-,G__21494__$1));
-var G__21494__$3 = (((G__21494__$2 == null))?null:cljs.core.interpose.call(null,"&",G__21494__$2));
-var G__21494__$4 = (((G__21494__$3 == null))?null:cljs.core.flatten.call(null,G__21494__$3));
-if((G__21494__$4 == null)){
+});})(G__24911,G__24911__$1))
+,G__24911__$1));
+var G__24911__$3 = (((G__24911__$2 == null))?null:cljs.core.interpose.call(null,"&",G__24911__$2));
+var G__24911__$4 = (((G__24911__$3 == null))?null:cljs.core.flatten.call(null,G__24911__$3));
+if((G__24911__$4 == null)){
 return null;
 } else {
-return cljs.core.apply.call(null,cljs.core.str,G__21494__$4);
+return cljs.core.apply.call(null,cljs.core.str,G__24911__$4);
 }
 });
 cemerick.url.split_param = (function cemerick$url$split_param(param){
@@ -47,14 +47,14 @@ return cljs.core.take.call(null,(2),cljs.core.concat.call(null,clojure.string.sp
 });
 cemerick.url.query__GT_map = (function cemerick$url$query__GT_map(qstr){
 if(!(clojure.string.blank_QMARK_.call(null,qstr))){
-var G__21500 = clojure.string.split.call(null,qstr,/&/);
-var G__21500__$1 = (((G__21500 == null))?null:cljs.core.seq.call(null,G__21500));
-var G__21500__$2 = (((G__21500__$1 == null))?null:cljs.core.mapcat.call(null,cemerick.url.split_param,G__21500__$1));
-var G__21500__$3 = (((G__21500__$2 == null))?null:cljs.core.map.call(null,cemerick.url.url_decode,G__21500__$2));
-if((G__21500__$3 == null)){
+var G__24917 = clojure.string.split.call(null,qstr,/&/);
+var G__24917__$1 = (((G__24917 == null))?null:cljs.core.seq.call(null,G__24917));
+var G__24917__$2 = (((G__24917__$1 == null))?null:cljs.core.mapcat.call(null,cemerick.url.split_param,G__24917__$1));
+var G__24917__$3 = (((G__24917__$2 == null))?null:cljs.core.map.call(null,cemerick.url.url_decode,G__24917__$2));
+if((G__24917__$3 == null)){
 return null;
 } else {
-return cljs.core.apply.call(null,cljs.core.hash_map,G__21500__$3);
+return cljs.core.apply.call(null,cljs.core.hash_map,G__24917__$3);
 }
 } else {
 return null;
@@ -121,11 +121,11 @@ var this__12322__auto____$1 = this;
 return cljs.core._lookup.call(null,this__12322__auto____$1,k__12323__auto__,null);
 });
 
-cemerick.url.URL.prototype.cljs$core$ILookup$_lookup$arity$3 = (function (this__12324__auto__,k21502,else__12325__auto__){
+cemerick.url.URL.prototype.cljs$core$ILookup$_lookup$arity$3 = (function (this__12324__auto__,k24919,else__12325__auto__){
 var self__ = this;
 var this__12324__auto____$1 = this;
-var G__21504 = (((k21502 instanceof cljs.core.Keyword))?k21502.fqn:null);
-switch (G__21504) {
+var G__24921 = (((k24919 instanceof cljs.core.Keyword))?k24919.fqn:null);
+switch (G__24921) {
 case "protocol":
 return self__.protocol;
 
@@ -159,7 +159,7 @@ return self__.anchor;
 
 break;
 default:
-return cljs.core.get.call(null,self__.__extmap,k21502,else__12325__auto__);
+return cljs.core.get.call(null,self__.__extmap,k24919,else__12325__auto__);
 
 }
 });
@@ -177,10 +177,10 @@ return cljs.core.pr_sequential_writer.call(null,writer__12337__auto__,pr_pair__1
 
 cemerick.url.URL.prototype.cljs$core$IIterable$ = true;
 
-cemerick.url.URL.prototype.cljs$core$IIterable$_iterator$arity$1 = (function (G__21501){
+cemerick.url.URL.prototype.cljs$core$IIterable$_iterator$arity$1 = (function (G__24918){
 var self__ = this;
-var G__21501__$1 = this;
-return (new cljs.core.RecordIter((0),G__21501__$1,8,new cljs.core.PersistentVector(null, 8, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword(null,"protocol","protocol",652470118),new cljs.core.Keyword(null,"username","username",1605666410),new cljs.core.Keyword(null,"password","password",417022471),new cljs.core.Keyword(null,"host","host",-1558485167),new cljs.core.Keyword(null,"port","port",1534937262),new cljs.core.Keyword(null,"path","path",-188191168),new cljs.core.Keyword(null,"query","query",-1288509510),new cljs.core.Keyword(null,"anchor","anchor",1549638489)], null),cljs.core._iterator.call(null,self__.__extmap)));
+var G__24918__$1 = this;
+return (new cljs.core.RecordIter((0),G__24918__$1,8,new cljs.core.PersistentVector(null, 8, 5, cljs.core.PersistentVector.EMPTY_NODE, [new cljs.core.Keyword(null,"protocol","protocol",652470118),new cljs.core.Keyword(null,"username","username",1605666410),new cljs.core.Keyword(null,"password","password",417022471),new cljs.core.Keyword(null,"host","host",-1558485167),new cljs.core.Keyword(null,"port","port",1534937262),new cljs.core.Keyword(null,"path","path",-188191168),new cljs.core.Keyword(null,"query","query",-1288509510),new cljs.core.Keyword(null,"anchor","anchor",1549638489)], null),cljs.core._iterator.call(null,self__.__extmap)));
 });
 
 cemerick.url.URL.prototype.cljs$core$IMeta$_meta$arity$1 = (function (this__12320__auto__){
@@ -246,36 +246,36 @@ return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,sel
 }
 });
 
-cemerick.url.URL.prototype.cljs$core$IAssociative$_assoc$arity$3 = (function (this__12329__auto__,k__12330__auto__,G__21501){
+cemerick.url.URL.prototype.cljs$core$IAssociative$_assoc$arity$3 = (function (this__12329__auto__,k__12330__auto__,G__24918){
 var self__ = this;
 var this__12329__auto____$1 = this;
-var pred__21505 = cljs.core.keyword_identical_QMARK_;
-var expr__21506 = k__12330__auto__;
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"protocol","protocol",652470118),expr__21506))){
-return (new cemerick.url.URL(G__21501,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+var pred__24922 = cljs.core.keyword_identical_QMARK_;
+var expr__24923 = k__12330__auto__;
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"protocol","protocol",652470118),expr__24923))){
+return (new cemerick.url.URL(G__24918,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"username","username",1605666410),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,G__21501,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"username","username",1605666410),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,G__24918,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"password","password",417022471),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,G__21501,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"password","password",417022471),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,G__24918,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"host","host",-1558485167),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,G__21501,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"host","host",-1558485167),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,G__24918,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"port","port",1534937262),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,G__21501,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"port","port",1534937262),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,G__24918,self__.path,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"path","path",-188191168),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,G__21501,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"path","path",-188191168),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,G__24918,self__.query,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"query","query",-1288509510),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,G__21501,self__.anchor,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"query","query",-1288509510),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,G__24918,self__.anchor,self__.__meta,self__.__extmap,null));
 } else {
-if(cljs.core.truth_(pred__21505.call(null,new cljs.core.Keyword(null,"anchor","anchor",1549638489),expr__21506))){
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,G__21501,self__.__meta,self__.__extmap,null));
+if(cljs.core.truth_(pred__24922.call(null,new cljs.core.Keyword(null,"anchor","anchor",1549638489),expr__24923))){
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,G__24918,self__.__meta,self__.__extmap,null));
 } else {
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,cljs.core.assoc.call(null,self__.__extmap,k__12330__auto__,G__21501),null));
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,self__.__meta,cljs.core.assoc.call(null,self__.__extmap,k__12330__auto__,G__24918),null));
 }
 }
 }
@@ -292,10 +292,10 @@ var this__12334__auto____$1 = this;
 return cljs.core.seq.call(null,cljs.core.concat.call(null,new cljs.core.PersistentVector(null, 8, 5, cljs.core.PersistentVector.EMPTY_NODE, [(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"protocol","protocol",652470118),self__.protocol],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"username","username",1605666410),self__.username],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"password","password",417022471),self__.password],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"host","host",-1558485167),self__.host],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"port","port",1534937262),self__.port],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"path","path",-188191168),self__.path],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"query","query",-1288509510),self__.query],null)),(new cljs.core.PersistentVector(null,2,(5),cljs.core.PersistentVector.EMPTY_NODE,[new cljs.core.Keyword(null,"anchor","anchor",1549638489),self__.anchor],null))], null),self__.__extmap));
 });
 
-cemerick.url.URL.prototype.cljs$core$IWithMeta$_with_meta$arity$2 = (function (this__12321__auto__,G__21501){
+cemerick.url.URL.prototype.cljs$core$IWithMeta$_with_meta$arity$2 = (function (this__12321__auto__,G__24918){
 var self__ = this;
 var this__12321__auto____$1 = this;
-return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,G__21501,self__.__extmap,self__.__hash));
+return (new cemerick.url.URL(self__.protocol,self__.username,self__.password,self__.host,self__.port,self__.path,self__.query,self__.anchor,G__24918,self__.__extmap,self__.__hash));
 });
 
 cemerick.url.URL.prototype.cljs$core$ICollection$_conj$arity$2 = (function (this__12327__auto__,entry__12328__auto__){
@@ -326,8 +326,8 @@ cemerick.url.__GT_URL = (function cemerick$url$__GT_URL(protocol,username,passwo
 return (new cemerick.url.URL(protocol,username,password,host,port,path,query,anchor,null,null,null));
 });
 
-cemerick.url.map__GT_URL = (function cemerick$url$map__GT_URL(G__21503){
-return (new cemerick.url.URL(new cljs.core.Keyword(null,"protocol","protocol",652470118).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"username","username",1605666410).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"password","password",417022471).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"host","host",-1558485167).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"port","port",1534937262).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"path","path",-188191168).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"query","query",-1288509510).cljs$core$IFn$_invoke$arity$1(G__21503),new cljs.core.Keyword(null,"anchor","anchor",1549638489).cljs$core$IFn$_invoke$arity$1(G__21503),null,cljs.core.dissoc.call(null,G__21503,new cljs.core.Keyword(null,"protocol","protocol",652470118),new cljs.core.Keyword(null,"username","username",1605666410),new cljs.core.Keyword(null,"password","password",417022471),new cljs.core.Keyword(null,"host","host",-1558485167),new cljs.core.Keyword(null,"port","port",1534937262),new cljs.core.Keyword(null,"path","path",-188191168),new cljs.core.Keyword(null,"query","query",-1288509510),new cljs.core.Keyword(null,"anchor","anchor",1549638489)),null));
+cemerick.url.map__GT_URL = (function cemerick$url$map__GT_URL(G__24920){
+return (new cemerick.url.URL(new cljs.core.Keyword(null,"protocol","protocol",652470118).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"username","username",1605666410).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"password","password",417022471).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"host","host",-1558485167).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"port","port",1534937262).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"path","path",-188191168).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"query","query",-1288509510).cljs$core$IFn$_invoke$arity$1(G__24920),new cljs.core.Keyword(null,"anchor","anchor",1549638489).cljs$core$IFn$_invoke$arity$1(G__24920),null,cljs.core.dissoc.call(null,G__24920,new cljs.core.Keyword(null,"protocol","protocol",652470118),new cljs.core.Keyword(null,"username","username",1605666410),new cljs.core.Keyword(null,"password","password",417022471),new cljs.core.Keyword(null,"host","host",-1558485167),new cljs.core.Keyword(null,"port","port",1534937262),new cljs.core.Keyword(null,"path","path",-188191168),new cljs.core.Keyword(null,"query","query",-1288509510),new cljs.core.Keyword(null,"anchor","anchor",1549638489)),null));
 });
 
 cemerick.url.translate_default = (function cemerick$url$translate_default(s,old_default,new_default){
@@ -339,15 +339,15 @@ return s;
 });
 cemerick.url.url_STAR_ = (function cemerick$url$url_STAR_(url){
 var url__$1 = (new goog.Uri(url));
-var vec__21512 = clojure.string.split.call(null,(function (){var or__11700__auto__ = url__$1.getUserInfo();
+var vec__24929 = clojure.string.split.call(null,(function (){var or__11700__auto__ = url__$1.getUserInfo();
 if(cljs.core.truth_(or__11700__auto__)){
 return or__11700__auto__;
 } else {
 return "";
 }
 })(),/:/,(2));
-var user = cljs.core.nth.call(null,vec__21512,(0),null);
-var pass = cljs.core.nth.call(null,vec__21512,(1),null);
+var user = cljs.core.nth.call(null,vec__24929,(0),null);
+var pass = cljs.core.nth.call(null,vec__24929,(1),null);
 return (new cemerick.url.URL(url__$1.getScheme(),(function (){var and__11688__auto__ = cljs.core.seq.call(null,user);
 if(and__11688__auto__){
 return user;
@@ -375,29 +375,29 @@ return and__11688__auto__;
  * URL path segments as desired before passing them into this fn.
  */
 cemerick.url.url = (function cemerick$url$url(var_args){
-var args21515 = [];
-var len__12775__auto___21520 = arguments.length;
-var i__12776__auto___21521 = (0);
+var args24932 = [];
+var len__12775__auto___24937 = arguments.length;
+var i__12776__auto___24938 = (0);
 while(true){
-if((i__12776__auto___21521 < len__12775__auto___21520)){
-args21515.push((arguments[i__12776__auto___21521]));
+if((i__12776__auto___24938 < len__12775__auto___24937)){
+args24932.push((arguments[i__12776__auto___24938]));
 
-var G__21522 = (i__12776__auto___21521 + (1));
-i__12776__auto___21521 = G__21522;
+var G__24939 = (i__12776__auto___24938 + (1));
+i__12776__auto___24938 = G__24939;
 continue;
 } else {
 }
 break;
 }
 
-var G__21519 = args21515.length;
-switch (G__21519) {
+var G__24936 = args24932.length;
+switch (G__24936) {
 case 1:
 return cemerick.url.url.cljs$core$IFn$_invoke$arity$1((arguments[(0)]));
 
 break;
 default:
-var argseq__12794__auto__ = (new cljs.core.IndexedSeq(args21515.slice((1)),(0),null));
+var argseq__12794__auto__ = (new cljs.core.IndexedSeq(args24932.slice((1)),(0),null));
 return cemerick.url.url.cljs$core$IFn$_invoke$arity$variadic((arguments[(0)]),argseq__12794__auto__);
 
 }
@@ -416,13 +416,11 @@ var base_url__$1 = (((base_url instanceof cemerick.url.URL))?base_url:cemerick.u
 return cljs.core.assoc.call(null,base_url__$1,new cljs.core.Keyword(null,"path","path",-188191168),pathetic.core.normalize.call(null,cljs.core.reduce.call(null,pathetic.core.resolve,new cljs.core.Keyword(null,"path","path",-188191168).cljs$core$IFn$_invoke$arity$1(base_url__$1),path_segments)));
 });
 
-cemerick.url.url.cljs$lang$applyTo = (function (seq21516){
-var G__21517 = cljs.core.first.call(null,seq21516);
-var seq21516__$1 = cljs.core.next.call(null,seq21516);
-return cemerick.url.url.cljs$core$IFn$_invoke$arity$variadic(G__21517,seq21516__$1);
+cemerick.url.url.cljs$lang$applyTo = (function (seq24933){
+var G__24934 = cljs.core.first.call(null,seq24933);
+var seq24933__$1 = cljs.core.next.call(null,seq24933);
+return cemerick.url.url.cljs$core$IFn$_invoke$arity$variadic(G__24934,seq24933__$1);
 });
 
 cemerick.url.url.cljs$lang$maxFixedArity = (1);
 
-
-//# sourceMappingURL=url.js.map

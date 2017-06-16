@@ -4,10 +4,10 @@ goog.require('cljs.core');
 goog.require('clojure.walk');
 camel_snake_kebab.extras.transform_keys = (function camel_snake_kebab$extras$transform_keys(t,coll){
 
-var transform = (function camel_snake_kebab$extras$transform_keys_$_transform(p__14068){
-var vec__14072 = p__14068;
-var k = cljs.core.nth.call(null,vec__14072,(0),null);
-var v = cljs.core.nth.call(null,vec__14072,(1),null);
+var transform = (function camel_snake_kebab$extras$transform_keys_$_transform(p__17412){
+var vec__17416 = p__17412;
+var k = cljs.core.nth.call(null,vec__17416,(0),null);
+var v = cljs.core.nth.call(null,vec__17416,(1),null);
 return new cljs.core.PersistentVector(null, 2, 5, cljs.core.PersistentVector.EMPTY_NODE, [t.call(null,k),v], null);
 });
 return clojure.walk.postwalk.call(null,(function (x){
@@ -18,5 +18,3 @@ return x;
 }
 }),coll);
 });
-
-//# sourceMappingURL=extras.js.map

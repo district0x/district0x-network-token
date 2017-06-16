@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 
 import './ERC20Basic.sol';
@@ -7,6 +7,13 @@ import './ERC20Basic.sol';
 /*
  * ERC20 interface
  * see https://github.com/ethereum/EIPs/issues/20
+ *
+ * Slightly modified version of OpenZeppelin's ERC20
+ * Original can be found ./orig/ERC20.sol or https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/ERC20.sol
+ * Modifications:
+ * - Added onlyPayloadSize modifier
+ * - Added doTransfer so it can be used in VestedToken with implmentation from MiniMe token
+ *
  */
 contract ERC20 is ERC20Basic {
 

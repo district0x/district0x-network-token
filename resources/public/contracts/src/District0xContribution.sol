@@ -1,61 +1,81 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
+
+/*
+    Copyright 2017, Matus Lestan (district0x)
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
 
 import "./SafeMath.sol";
 import "./District0xNetworkToken.sol";
 import "./Shareable.sol";
 import "./Pausable.sol";
-import "./interface/Controller.sol";
+import "./interface/TokenController.sol";
 
-contract District0xContribution is Shareable, Pausable, Controller {
+contract District0xContribution is Shareable, Pausable, TokenController {
     using SafeMath for uint;
 
     District0xNetworkToken public district0xNetworkToken;
-    address public wallet;
-    address public founder1;
-    address public founder2;
-    address public earlySponsor;
-    address[] public advisers;
+    address public wallet;                                              // Wallet that receives all sale funds
+    address public founder1;                                            // Wallet of founder 1
+    address public founder2;                                            // Wallet of founder 2
+    address public earlySponsor;                                        // Wallet of early sponsor
+    address[] public advisers;                                          // 4 Wallets of advisors
 
-    uint public constant FOUNDER1_STAKE = 120000000000000000000000000; // 120M
-    uint public constant FOUNDER2_STAKE = 80000000000000000000000000; // 80M
-    uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000000000000000000000; // 5M
-    uint public constant ADVISER_STAKE = 5000000000000000000000000; // 5M
-    uint public constant LEGAL_ADVISER_STAKE = 2000000000000000000000000; // 2M
-    uint public constant COMMUNITY_ADVISERS_STAKE = 3000000000000000000000000; // 3M
-    uint public constant CONTRIB_PERIOD1_STAKE = 600000000000000000000000000; // 600M
-    uint public constant CONTRIB_PERIOD2_STAKE = 140000000000000000000000000; // 140M
-    uint public constant CONTRIB_PERIOD3_STAKE = 40000000000000000000000000; // 40M
+    uint public constant FOUNDER1_STAKE = 120000000000000000000000000;              // 120M DNT
+    uint public constant FOUNDER2_STAKE = 80000000000000000000000000;               // 80M  DNT
+    uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000000000000000000000;       // 5M   DNT
+    uint public constant ADVISER_STAKE = 5000000000000000000000000;                 // 5M   DNT
+    uint public constant LEGAL_ADVISER_STAKE = 2000000000000000000000000;           // 2M   DNT
+    uint public constant COMMUNITY_ADVISERS_STAKE = 3000000000000000000000000;      // 3M   DNT
+    uint public constant CONTRIB_PERIOD1_STAKE = 600000000000000000000000000;       // 600M DNT
+    uint public constant CONTRIB_PERIOD2_STAKE = 140000000000000000000000000;       // 140M DNT
+    uint public constant CONTRIB_PERIOD3_STAKE = 40000000000000000000000000;        // 40M  DNT
 
-    uint8 public constant CONTRIB_PERIODS = 3;
+    uint8 public constant CONTRIB_PERIODS = 3;                          // Number of Contribution Periods
 
-    uint public minContribAmount = 100000000000000000; // 0.1 ether
+    uint public minContribAmount = 100000000000000000;                  // 0.01 ether
 
-    uint public constant TEAM_VESTING_CLIFF = 24 weeks; // 6 months
-    uint public constant TEAM_VESTING_PERIOD = 96 weeks; // 2 years
+    uint public constant TEAM_VESTING_CLIFF = 24 weeks;                 // 6 months vesting cliff for founders and advisors, except community advisors
+    uint public constant TEAM_VESTING_PERIOD = 96 weeks;                // 2 years vesting period for founders and advisors, except community advisors
     
-    uint public constant EARLY_CONTRIBUTOR_VESTING_CLIFF = 12 weeks; // 3 months
-    uint public constant EARLY_CONTRIBUTOR_VESTING_PERIOD = 24 weeks; // 6 months
+    uint public constant EARLY_CONTRIBUTOR_VESTING_CLIFF = 12 weeks;    // 3 months vesting cliff for early sponsor
+    uint public constant EARLY_CONTRIBUTOR_VESTING_PERIOD = 24 weeks;   // 6 months vesting cliff for early sponsor
 
-    bool public tokenTransfersEnabled = false;
+    bool public tokenTransfersEnabled = false;                          // DNT token transfers will be enabled manually
+                                                                        // after first contribution period
+                                                                        // Can't be disabled back
 
     struct Contributor {
-        uint amount;
-        bool isCompensated;
-        uint amountCompensated;
+        uint amount;                        // Amount of ETH contributed by an addrress in given contribution period
+        bool isCompensated;                 // Whether this contributor received DNT token for ETH contribution
+        uint amountCompensated;             // Amount of DNT received. Not really needed to store,
+                                            // but stored for accounting and security purposes
     }
 
     struct ContribPeriod {
-        uint softCapAmount;
-        uint afterSoftCapDuration;
-        uint hardCapAmount;
-        uint startTime;
-        uint endTime;
-        bool isEnabled;
-        bool isCancelled;
-        bool softCapReached;
-        bool hardCapReached;
-        uint totalContributed;
-        address[] contributorsKeys;
+        uint softCapAmount;                                 // Soft cap of contribution period in wei
+        uint afterSoftCapDuration;                          // Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hardcap)
+        uint hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
+        uint startTime;                                     // Start time of contribution period in UNIX time
+        uint endTime;                                       // End time of contribution period in UNIX time
+        bool isEnabled;                                     // If contribution period was enabled by multisignature
+        bool isCancelled;                                   // If contribution period was cancelled (only possible for 2. or 3. period)
+        bool softCapReached;                                // If soft cap was reached
+        bool hardCapReached;                                // If hard cap was reached
+        uint totalContributed;                              // Total amount of ETH contributed in given period
+        address[] contributorsKeys;                         // Addresses of all contributors in given contribution period
         mapping (address => Contributor) contributors;
     }
 
@@ -68,8 +88,8 @@ contract District0xContribution is Shareable, Pausable, Controller {
     event onHardCapReached(uint indexed contribPeriodIndex, uint endTime);
 
     function District0xContribution(
-        address[] _owners,
-        uint _required,
+        address[] _owners,          // Addresses allowed to run functions in this contract with "onlymanyowners" modifier
+        uint _required,             // Number of signatures required to run function with "onlymanyowners" modifier
         address _wallet,
         address _founder1,
         address _founder2,
@@ -90,6 +110,8 @@ contract District0xContribution is Shareable, Pausable, Controller {
         contribPeriodsStakes[2] = CONTRIB_PERIOD3_STAKE;
     }
 
+    // @notice Returns index of currently running contribution period
+    //  If there's none, returns index 3 (non-existing)
     function getRunningContribPeriod() constant returns (uint) {
         for (uint i = 0; i < contribPeriods.length; i++) {
             ContribPeriod contribPeriod = contribPeriods[i];
@@ -110,7 +132,11 @@ contract District0xContribution is Shareable, Pausable, Controller {
         contributeWithAddress(msg.sender);
     }
 
-    // Function for contributing
+    // @notice Function to participate in contribution period
+    //  Amounts from the same address should be added up
+    //  If soft or hard cap is reached, end time should be modified
+    //  Funds should be transferred into multisig wallet
+    // @param contributor Address that will receive DNT token
     function contributeWithAddress(address contributor)
         payable
         stopInEmergency
@@ -130,7 +156,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
 
         var newTotalContributed = contribPeriods[periodIndex].totalContributed;
 
-        // We reached soft cap
+        // Soft cap was reached
         if (newTotalContributed >= contribPeriods[periodIndex].softCapAmount &&
             oldTotalContributed < contribPeriods[periodIndex].softCapAmount)
         {
@@ -138,7 +164,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
             contribPeriods[periodIndex].endTime = contribPeriods[periodIndex].afterSoftCapDuration.add(now);
             onSoftCapReached(periodIndex, contribPeriods[periodIndex].endTime);
         } else
-        // We reached hard cap
+        // Hard cao was reached
         if (newTotalContributed >= contribPeriods[periodIndex].hardCapAmount &&
                    oldTotalContributed < contribPeriods[periodIndex].hardCapAmount)
         {
@@ -152,9 +178,13 @@ contract District0xContribution is Shareable, Pausable, Controller {
             contribPeriods[periodIndex].contributorsKeys.length);
     }
 
-    // This function is called by owner after contribution period is over to distribute d0x proportionally
-    // Each contributor should get d0x just once even if this function is called multiple times
-    // Can be called only after contribution period
+    // @notice This method is called by owner after contribution period ends, to distribute DNT in proportional manner
+    //  Each contributor should receive DNT just once even if this method is called multiple times
+    //  In case of many contributors must be able to compensate contributors in paginational way, otherwise might
+    //  run out of gas if wanted to compensate all on one method call. Therefore parameters offset and limit
+    // @param periodIndex Index of contribution period (0-2)
+    // @param offset Number of first contributors to skip.
+    // @param limit Max number of contributors compensated on this call
     function compensateContributors(uint periodIndex, uint offset, uint limit)
         onlyOwner
     {
@@ -162,7 +192,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
         require(contribPeriods[periodIndex].endTime < now);
 
         uint i = offset;
-        uint j = 0;
+        uint compensatedCount = 0;
         address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
         uint contributorsCount = contributorsKeys.length;
 
@@ -171,7 +201,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
             .mul(1000000000000000000)
             .div(contribPeriods[periodIndex].totalContributed);
 
-        while (i < contributorsCount && j < limit) {
+        while (i < contributorsCount && compensatedCount < limit) {
             address contributorAddress = contributorsKeys[i];
             if (!contribPeriod.contributors[contributorAddress].isCompensated) {
                 var amountContributed = contribPeriod.contributors[contributorAddress].amount;
@@ -183,15 +213,22 @@ contract District0xContribution is Shareable, Pausable, Controller {
                 district0xNetworkToken.transfer(contributorAddress,
                     contribPeriod.contributors[contributorAddress].amountCompensated);
 
-                j++;
+                compensatedCount++;
             }
             i++;
         }
     }
 
-    // Function for setting properties of contribution period
-    // Setting first contribution period sets up vesting for founders & advisors
-    // Contribution period should still not be enabled after setting
+    // @notice Method for setting up contribution period
+    //  Only owner should be able to execute
+    //  Setting first contribution period sets up vesting for founders & advisors
+    //  Contribution period should still not be enabled after calling this method
+    // @param i Contribution period index (0-2)
+    // @param softCapAmount Soft Cap in wei
+    // @param afterSoftCapDuration Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hardcap)
+    // @param hardCapAmount Hard Cap in wei
+    // @param startTime Contribution start time in UNIX time
+    // @param endTime Contribution end time in UNIX time
     function setContribPeriod(
         uint8 i,
         uint softCapAmount,
@@ -230,8 +267,10 @@ contract District0xContribution is Shareable, Pausable, Controller {
             district0xNetworkToken.grantVestedTokens(advisers[0], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
             district0xNetworkToken.grantVestedTokens(advisers[1], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
             district0xNetworkToken.grantVestedTokens(advisers[2], LEGAL_ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(advisers[3], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
 
+            // Community advisors stake has no vesting, but we set it up this way, so we can revoke it in case of
+            // re-setting up contribution period
+            district0xNetworkToken.grantVestedTokens(advisers[3], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
         }
 
         address[] memory contributorsKeys;
@@ -246,9 +285,11 @@ contract District0xContribution is Shareable, Pausable, Controller {
         }
     }
 
-    // Future contribution periods (besides first one) can be cancelled
-    // In that case d0x that would otherwise be distributed will be burned
-    // Must be executed by multisignature
+    // @notice Cancelles contribution period by destroying tokes reserved for it
+    //  Must be executed by multisignature of many owners
+    //  First contribution period can't be cancelled
+    //  Past contribution period can't be cancelled
+    // @param periodIndex Contribution period index (1-2)
     function cancelContribPeriod(uint periodIndex)
         onlymanyowners(sha3(msg.data))
     {
@@ -257,30 +298,39 @@ contract District0xContribution is Shareable, Pausable, Controller {
         ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
         require(contribPeriod.startTime > now);
         require(contribPeriod.endTime > now);
+        require(!contribPeriod.isCancelled);
         contribPeriods[periodIndex].isCancelled = true;
         district0xNetworkToken.destroyTokens(this, contribPeriodsStakes[periodIndex]);
     }
 
-    // Function to enable contribution period
-    // Must be executed by multisignature
-    function enableContribPeriod(uint8 i)
+    // @notice Enables contribution period
+    //  Must be executed by multisignature
+    // @param periodIndex Contribution period index (0-2)
+    function enableContribPeriod(uint8 periodIndex)
         onlymanyowners(sha3(msg.data))
     {
-        require(i < contribPeriods.length);
-        require(contribPeriods[i].startTime > 0);
-        require(!contribPeriods[i].isCancelled);
-        contribPeriods[i].isEnabled = true;
+        require(periodIndex < contribPeriods.length);
+        require(contribPeriods[periodIndex].startTime > 0);
+        require(!contribPeriods[periodIndex].isCancelled);
+        contribPeriods[periodIndex].isEnabled = true;
     }
 
+    // @notice Sets new min. contribution amount
+    //  Only owner can execute
+    //  Cannot be executed while contribution period is running
+    // @param _minContribAmount new min. amount
     function setMinContribAmount(uint _minContribAmount)
         onlyOwner
     {
         require(_minContribAmount > 0);
+        require(getRunningContribPeriod() == CONTRIB_PERIODS);
         minContribAmount = _minContribAmount;
     }
 
-    // Function to set d0x token contract
-    // When it has no supply we create all of the supply at once, owned by this contract
+    // @notice Sets District0xNetworkToken contract
+    //  Generates all DNT tokens and assignes them to this contract
+    //  If token contract has already generated tokens, do not generate again
+    // @param _district0xNetworkToken District0xNetworkToken address
     function setDistrict0xNetworkToken(address _district0xNetworkToken)
         onlyOwner
     {
@@ -299,7 +349,8 @@ contract District0xContribution is Shareable, Pausable, Controller {
         }
     }
 
-    // After first contribution period is over and we verified everything went ok, we will enable token transfers
+    // @notice Enables transfers of DNT
+    //  Will be executed after first contribution period by owner
     function enableDistrict0xNetworkTokenTransfers()
         onlyOwner
     {
@@ -309,7 +360,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
         tokenTransfersEnabled = true;
     }
 
-    // kills the contract sending everything to `_to`.
+    // @notice Kill method should not really be needed, but just in case
     function kill(address _to) onlymanyowners(sha3(msg.data)) external {
         suicide(_to);
     }
@@ -327,6 +378,7 @@ contract District0xContribution is Shareable, Pausable, Controller {
         return false;
     }
 
+    // Before transfers are enabled for everyone, only this contract is allowed to distribute DNT
     function onTransfer(address _from, address _to, uint _amount) public returns (bool) {
         return tokenTransfersEnabled || _from == address(this) || _to == address(this);
     }
@@ -334,6 +386,11 @@ contract District0xContribution is Shareable, Pausable, Controller {
     function onApprove(address _owner, address _spender, uint _amount) public returns (bool) {
         return tokenTransfersEnabled;
     }
+
+    /*
+     Following constant methods are used for tests and contribution web app
+     They don't impact logic of contribution contract, therefor DOES NOT NEED TO BE AUDITED
+     */
 
     // Used by contribution front-end to obtain contribution period properties
     function getContribPeriod(uint periodIndex)

@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 /*
     Copyright 2017, Jorge Izquierdo (Aragon Foundation)

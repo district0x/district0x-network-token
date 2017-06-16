@@ -1,4 +1,14 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
+
+/*
+    Slightly modified OpenZeppelin Vested Token deriving MiniMeToken
+    See original at ./orig/VestedToken.sol or https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/VestedToken.sol
+    Modifications:
+    - Does not inherit from StandardToken, so transfer functions can be supplied by MiniMe
+    - Uses SafeMath.sol
+    - In revokeTokenGrant method instead of manipulating balances manually, calls doTransfer method supplied by MiniMe
+    - Added revokeAllTokenGrants method
+*/
 
 import "./LimitedTransferToken.sol";
 import "./SafeMath.sol";
@@ -93,11 +103,17 @@ contract VestedToken is LimitedTransferToken {
     grants[_holder][_grantId] = grants[_holder][grants[_holder].length.sub(1)];
     grants[_holder].length -= 1;
 
+    // This will call MiniMe's doTransfer method, so token is transferred according to
+    // MiniMe Token logic
     doTransfer(_holder, receiver, nonVested);
 
     Transfer(_holder, receiver, nonVested);
   }
 
+  /**
+   * @dev Revoke all grants of tokens of a specifed address.
+   * @param _holder The address which will have its tokens revoked.
+   */
     function revokeAllTokenGrants(address _holder) {
         var grandsCount = tokenGrantsCount(_holder);
         for (uint i = 0; i < grandsCount; i++) {

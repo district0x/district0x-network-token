@@ -14,3 +14,5 @@ contribution.iml
 /figwheel_server.log
 /resources/public/js/compiled/
 /test-fig-out/
+/test-fig-compiled/
+/test-compiled/

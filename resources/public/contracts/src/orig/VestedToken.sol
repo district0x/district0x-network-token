@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 import "./StandardToken.sol";
 import "./LimitedTransferToken.sol";
@@ -97,13 +97,6 @@ contract VestedToken is StandardToken, LimitedTransferToken {
 
     Transfer(_holder, receiver, nonVested);
   }
-
-    function revokeAllTokenGrants(address _holder) {
-        var grandsCount = tokenGrantsCount(_holder);
-        for (uint i = 0; i < grandsCount; i++) {
-          revokeTokenGrant(_holder, 0);
-        }
-    }
 
   /**
    * @dev Calculate the total amount of transferable tokens of a holder at a given time

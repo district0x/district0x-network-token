@@ -1,1 +1,0 @@
-{"version":3,"file":"\/Users\/matus\/www\/district0x\/contribution\/test-compiled\/district0x\/constants.js","sources":["constants.cljs"],"lineCount":7,"mappings":";AAAA;;AAEA,AAAKA,mCAAM,AAACC,6BAAQ,QAAA,PAAMC;AAC1B,AAAKC,4CAAe,AAACF,6BAAQ,QAAA,PAAMC","names":["district0x.constants\/mist?","cljs.core\/boolean","js\/window","district0x.constants\/provides-web3?"]}

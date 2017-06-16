@@ -1,4 +1,4 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 import "./MiniMeToken.sol";
 import "./VestedToken.sol";
@@ -9,7 +9,7 @@ contract District0xNetworkToken is MiniMeToken, VestedToken {
             _tokenFactory,
             0x0,                        // no parent token
             0,                          // no snapshot block number from parent
-            "District0x Network Token", // Token name
+            "district0x Network Token", // Token name
             18,                         // Decimals
             "DNT",                      // Symbol
             true                        // Enable transfers

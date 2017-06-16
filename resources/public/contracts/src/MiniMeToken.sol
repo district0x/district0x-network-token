@@ -1,18 +1,24 @@
-pragma solidity ^0.4.8;
+pragma solidity ^0.4.11;
 
 import "./interface/Controlled.sol";
-import "./interface/Controller.sol";
-import "./interface/ApproveAndCallReceiver.sol";
+import "./interface/TokenController.sol";
+import "./interface/ApproveAndCallFallback.sol";
 import "./ERC20.sol";
 import "./SafeMath.sol";
 
 /*
-    Copyright 2017, Jorge Izquierdo (Aragon Foundation)
-    Copyright 2017, Jordi Baylina (Giveth)
+    Slightly modified version of Giveth's MiniMeToken
+    Original can be found at ./orig/MiniMeToken.sol or https://github.com/Giveth/minime
+    Modifications:
+    - Split contracts into multiple files
+    - Use SafeMath.sol
+    - Make it descendant of ERC20
+    - Add onlyPayloadSize modifier
+*/
 
-    Based on MineMeToken.sol from https://github.com/Giveth/minime
- */
-
+/// @dev The actual token contract, the default controller is the msg.sender
+///  that deploys the contract, so usually this token will be deployed by a
+///  token controller contract, which Giveth will call a "Campaign"
 contract MiniMeToken is ERC20, Controlled {
     using SafeMath for uint;
 
@@ -107,8 +113,7 @@ contract MiniMeToken is ERC20, Controlled {
     /// @param _to The address of the recipient
     /// @param _amount The amount of tokens to be transferred
     /// @return Whether the transfer was successful or not
-    function transfer(address _to, uint256 _amount
-    ) onlyPayloadSize(2 * 32) returns (bool success) {
+    function transfer(address _to, uint256 _amount) onlyPayloadSize(2 * 32) returns (bool success) {
         if (!transfersEnabled) throw;
         return doTransfer(msg.sender, _to, _amount);
     }
@@ -130,7 +135,7 @@ contract MiniMeToken is ERC20, Controlled {
             if (!transfersEnabled) throw;
 
             // The standard ERC 20 transferFrom functionality
-            if (allowed[_from][msg.sender] < _amount) throw;
+            if (allowed[_from][msg.sender] < _amount) return false;
             allowed[_from][msg.sender] = allowed[_from][msg.sender].sub(_amount);
         }
         return doTransfer(_from, _to, _amount);
@@ -149,6 +154,8 @@ contract MiniMeToken is ERC20, Controlled {
                return true;
            }
 
+           if (parentSnapShotBlock >= block.number) throw;
+
            // Do not allow transfer to 0x0 or the token contract itself
            if ((_to == 0) || (_to == address(this))) throw;
 
@@ -156,12 +163,13 @@ contract MiniMeToken is ERC20, Controlled {
            //  account the transfer returns false
            var previousBalanceFrom = balanceOfAt(_from, block.number);
            if (previousBalanceFrom < _amount) {
-               throw;
+               return false;
            }
 
            // Alerts the token controller of the transfer
            if (isContract(controller)) {
-               if (!Controller(controller).onTransfer(_from, _to, _amount)) throw;
+               if (!TokenController(controller).onTransfer(_from, _to, _amount))
+               throw;
            }
 
            // First update the balance array with the new value for the address
@@ -194,7 +202,7 @@ contract MiniMeToken is ERC20, Controlled {
     function approve(address _spender, uint256 _amount) returns (bool success) {
         if (!transfersEnabled) throw;
 
-        // To change the approve amount you first have to reduce the addresses´
+        // To change the approve amount you first have to reduce the addresses`
         //  allowance to zero by calling `approve(_spender,0)` if it is not
         //  already 0 to mitigate the race condition described here:
         //  https://github.com/ethereum/EIPs/issues/20#issuecomment-263524729
@@ -202,7 +210,7 @@ contract MiniMeToken is ERC20, Controlled {
 
         // Alerts the token controller of the approve function call
         if (isContract(controller)) {
-            if (!Controller(controller).onApprove(msg.sender, _spender, _amount))
+            if (!TokenController(controller).onApprove(msg.sender, _spender, _amount))
                 throw;
         }
 
@@ -230,20 +238,15 @@ contract MiniMeToken is ERC20, Controlled {
     /// @return True if the function call was successful
     function approveAndCall(address _spender, uint256 _amount, bytes _extraData
     ) returns (bool success) {
-        approve(_spender, _amount);
+        if (!approve(_spender, _amount)) throw;
 
-        // This portion is copied from ConsenSys's Standard Token Contract. It
-        //  calls the receiveApproval function that is part of the contract that
-        //  is being approved (`_spender`). The function should look like:
-        //  `receiveApproval(address _from, uint256 _amount, address
-        //  _tokenContract, bytes _extraData)` It is assumed that the call
-        //  *should* succeed, otherwise the plain vanilla approve would be used
-        ApproveAndCallReceiver(_spender).receiveApproval(
-           msg.sender,
-           _amount,
-           this,
-           _extraData
+        ApproveAndCallFallBack(_spender).receiveApproval(
+            msg.sender,
+            _amount,
+            this,
+            _extraData
         );
+
         return true;
     }
 
@@ -309,10 +312,6 @@ contract MiniMeToken is ERC20, Controlled {
         }
     }
 
-    function min(uint a, uint b) internal returns (uint) {
-      return a < b ? a : b;
-    }
-
 ////////////////
 // Clone Token Method
 ////////////////
@@ -324,7 +323,7 @@ contract MiniMeToken is ERC20, Controlled {
     /// @param _cloneTokenSymbol Symbol of the clone token
     /// @param _snapshotBlock Block when the distribution of the parent token is
     ///  copied to set the initial distribution of the new clone token;
-    ///  if the block is higher than the actual block, the current block is used
+    ///  if the block is zero than the actual block, the current block is used
     /// @param _transfersEnabled True if transfers are allowed in the clone
     /// @return The address of the new MiniMeToken Contract
     function createCloneToken(
@@ -334,7 +333,7 @@ contract MiniMeToken is ERC20, Controlled {
         uint _snapshotBlock,
         bool _transfersEnabled
         ) returns(address) {
-        if (_snapshotBlock > block.number) _snapshotBlock = block.number;
+        if (_snapshotBlock == 0) _snapshotBlock = block.number;
         MiniMeToken cloneToken = tokenFactory.createCloneToken(
             this,
             _snapshotBlock,
@@ -457,12 +456,17 @@ contract MiniMeToken is ERC20, Controlled {
         return size>0;
     }
 
+    /// @dev Helper function to return a min betwen the two uints
+    function min(uint a, uint b) internal returns (uint) {
+        return a < b ? a : b;
+    }
+
     /// @notice The fallback function: If the contract's controller has not been
     ///  set to 0, then the `proxyPayment` method is called which relays the
     ///  ether and creates tokens as described in the token controller contract
     function ()  payable {
         if (isContract(controller)) {
-            if (! Controller(controller).proxyPayment.value(msg.value)(msg.sender))
+            if (! TokenController(controller).proxyPayment.value(msg.value)(msg.sender))
                 throw;
         } else {
             throw;
@@ -473,7 +477,14 @@ contract MiniMeToken is ERC20, Controlled {
 ////////////////
 // Events
 ////////////////
+    event Transfer(address indexed _from, address indexed _to, uint256 _amount);
     event NewCloneToken(address indexed _cloneToken, uint _snapshotBlock);
+    event Approval(
+        address indexed _owner,
+        address indexed _spender,
+        uint256 _amount
+        );
+
 }
 
 

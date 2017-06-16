@@ -102,6 +102,6 @@
                                                :output-to "contribution-tests.js",
                                                :output-dir "test-compiled",
                                                :target :nodejs,
-                                               :optimizations :none,
+                                               :optimizations :simple,
                                                :verbose false
-                                               :source-map true}}]}}})
+                                               :source-map "contribution-tests.js.map" #_ true}}]}}})
