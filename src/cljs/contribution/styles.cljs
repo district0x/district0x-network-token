@@ -20,6 +20,7 @@
               :accent1-color accent1-color
               :text-color "#FFF"})
 
+
 (def mui-theme (get-mui-theme {:palette palette
                                :font-family "proxima-soft, sans-serif"
                                :text-field {:error-color theme-orange
@@ -37,58 +38,12 @@
                                :snackbar {:background-color "rgba(0, 0, 0, 0.95)"
                                           :text-color theme-cyan}}))
 
-(def word-wrap-break
-  {:word-wrap :break-word})
+;; --- GENERIC STYLES BEGNINNING ---
 
-(def desktop-gutter (aget js/MaterialUIStyles "spacing" "desktopGutter"))
-(def desktop-gutter-more (aget js/MaterialUIStyles "spacing" "desktopGutterMore"))
-(def desktop-gutter-less (aget js/MaterialUIStyles "spacing" "desktopGutterLess"))
-(def desktop-gutter-mini (aget js/MaterialUIStyles "spacing" "desktopGutterMini"))
-
-(def white-text
-  {:color (color :white)})
-
-(def app-bar
-  {:background-color "#FFF"
-   :box-shadow "none"})
-
-(def row-no-margin
-  {:margin-left 0
-   :margin-right 0})
-
-(def app-bar-address-select
-  {:color theme-blue
-   :margin-right 10})
-
-(def app-bar-address
-  {:margin-right 10
-   :font-size "1.3em"
-   :line-height "50px"
-   :color theme-blue})
-
-(def app-bar-select-field-label
-  {:color theme-blue})
-
-(defn padding-all [x]
-  {:padding-top x
-   :padding-bottom x
-   :padding-right x
-   :padding-left x})
-
-(def content-wrap
-  (padding-all desktop-gutter))
-
-(def paper-secton-thin
-  {:padding desktop-gutter-less
-   :margin-bottom desktop-gutter-less})
-
-(def paper-secton-mini
-  {:padding desktop-gutter-mini
-   :margin-bottom desktop-gutter-mini})
-
-(def paper-secton
-  {:padding desktop-gutter
-   :margin-bottom desktop-gutter})
+(def desktop-gutter (aget mui-theme "spacing" "desktopGutter"))
+(def desktop-gutter-more (aget mui-theme "spacing" "desktopGutterMore"))
+(def desktop-gutter-less (aget mui-theme "spacing" "desktopGutterLess"))
+(def desktop-gutter-mini (aget mui-theme "spacing" "desktopGutterMini"))
 
 (def margin-bottom-gutter
   {:margin-bottom desktop-gutter})
@@ -111,6 +66,34 @@
 (def margin-top-gutter-less
   {:margin-top desktop-gutter-less})
 
+(defn margin-all [x]
+  {:margin-top x
+   :margin-bottom x
+   :margin-right x
+   :margin-left x})
+
+(defn margin-horizontal [x]
+  {:margin-right x
+   :margin-left x})
+
+(defn margin-vertical [x]
+  {:margin-top x
+   :margin-bottom x})
+
+(defn padding-all [x]
+  {:padding-top x
+   :padding-bottom x
+   :padding-right x
+   :padding-left x})
+
+(defn padding-horizontal [x]
+  {:padding-right x
+   :padding-left x})
+
+(defn padding-vertical [x]
+  {:padding-top x
+   :padding-bottom x})
+
 (def text-left
   {:text-align :left})
 
@@ -126,6 +109,56 @@
 (def full-height
   {:height "100%"})
 
+(def no-wrap
+  {:white-space :nowrap})
+
+(def word-wrap-break
+  {:word-wrap :break-word})
+
+(def clickable
+  {:cursor :pointer})
+
+(def display-inline
+  {:display :inline})
+
+(def display-block
+  {:display :block})
+
+(def italic-text
+  {:font-style :italic})
+
+(def bold-text
+  {:font-style :bold})
+
+
+;; --- GENERIC STYLES END ---
+
+(def paper
+  {:border-radius "10px"})
+
+(def content-wrap
+  (padding-all desktop-gutter))
+
+(def white-text
+  {:color (color :white)})
+
+(def app-bar
+  {:background-color "#FFF"
+   :box-shadow "none"})
+
+(def active-address-select-field
+  {:color theme-blue
+   :margin-right 10})
+
+(def active-address-single
+  {:margin-right 10
+   :font-size "1.3em"
+   :line-height "50px"
+   :color theme-blue})
+
+(def active-address-select-field-label
+  {:color theme-blue})
+
 (def app-bar-balance
   {:color theme-blue})
 
@@ -137,9 +170,6 @@
 
 (def stats-tile-border-top
   {:border-top "0.5px solid rgba(255, 255, 255, 0.1)"})
-
-(def d0x-symbol
-  {:font-family "filson-soft, sans-serif"})
 
 (def stats-tile
   {:text-align "center"
@@ -172,11 +202,7 @@
    :width "auto"
    :margin-top 13})
 
-(def paper
-  {:border-radius "10px"})
 
-(def no-wrap
-  {:white-space :nowrap})
 
 (def stats-tile-amount
   {:width "100%"
@@ -187,7 +213,7 @@
   {:width "100%"
    :font-size "1.2em"})
 
-(def soft-cap-progress
+(def cap-progress
   (merge
     margin-bottom-gutter-less
     {:height "10px"

@@ -1,1 +1,0 @@
-(ns contribution.components.icons)

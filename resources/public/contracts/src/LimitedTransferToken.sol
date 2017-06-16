@@ -35,12 +35,12 @@ contract LimitedTransferToken is ERC20 {
   }
 
   // Checks modifier and allows transfer if tokens are not locked.
-  function transfer(address _to, uint _value) canTransfer(msg.sender, _value) {
+  function transfer(address _to, uint _value) canTransfer(msg.sender, _value) returns (bool) {
    return super.transfer(_to, _value);
   }
 
   // Checks modifier and allows transfer if tokens are not locked.
-  function transferFrom(address _from, address _to, uint _value) canTransfer(_from, _value) {
+  function transferFrom(address _from, address _to, uint _value) canTransfer(_from, _value) returns (bool) {
    return super.transferFrom(_from, _to, _value);
   }
 
