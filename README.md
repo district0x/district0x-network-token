@@ -3,7 +3,7 @@
 <img src="resources/public/images/dnt-header.jpg"/>
 
 Read More:
-- [Contribution flow](/CONTRIBUTION_FLOW.md)
+- [Contribution Period Flow](/CONTRIBUTION_FLOW.md)
 
 ## ABIs
 
@@ -40,3 +40,11 @@ Contribution:
 
 - [District0xContribution.sol](/resources/public/contracts/src/District0xContribution.sol): Implementation of our token sale
 - [MultisigWallet.sol](/resources/public/contracts/src/District0xContribution.sol): Consensys multisig wallet used for distric0x funds
+
+## Tests
+To run our smart-contracts tests you need to have [node](https://nodejs.org/en/) installed on your machine.
+Our tests are written in Clojurescript at [tests.cljs](/test/contribution/tests.cljs), but they are compiled into Javascript
+at [contribution-tests.js](/contribution-tests.js), so you don't need to do that. You can just run tests with following command:
+```bash
+node contribution-tests.js
+```
