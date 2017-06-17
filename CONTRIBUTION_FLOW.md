@@ -12,11 +12,11 @@ Parameters:
 - _Cofounder 1_: Address of Matus
 - _Cofounder 2_: Address of Joe
 - _Early Sponsor_: Address of our early sponsor
-- _Advisers_: 4 Addresses of advisers consisting of: Luis Cuende from Aragon, Carl Bennett from Status, our legal adviser and community advisers wallet.
+- _Advisers_: 4 addresses of advisers consisting of: Luis Cuende from Aragon, Carl Bennett from Status, our legal adviser and community advisers wallet.
 From community advisers wallet, DNT rewards will be send after sale to community members listed in this [spreadsheet](https://docs.google.com/spreadsheets/d/11Kw5JK2YTFQzoC5yHH7EcGJAF3Ve9ypz3M6J12h0PmU/edit#gid=0).
 
 #### 2. Deploy MiniMeTokenFactory [MiniMeToken.sol](/resources/public/contracts/src/MiniMeToken.sol)
-MiniMeTokenFactory contract must be deployed, so we will be able to later clone our DNT Token.
+MiniMeTokenFactory contract must be deployed, so DNT Token becomes clonable.
 
 No parameters.
  
@@ -90,6 +90,7 @@ This method must be executed by multi-signature.
 Parameters:
 - _Contribution Period Index_: **1** Index number of contribution period to be enabled (1 or 2)
 
+<br><br>
 <p align="center">
 <img src="resources/public/images/dnt-logo-300.png"/>
 </p>
