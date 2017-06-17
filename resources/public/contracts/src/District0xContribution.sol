@@ -21,7 +21,7 @@ import "./SafeMath.sol";
 import "./District0xNetworkToken.sol";
 import "./Shareable.sol";
 import "./Pausable.sol";
-import "./interface/TokenController.sol";
+import "./minime_interface/TokenController.sol";
 
 contract District0xContribution is Shareable, Pausable, TokenController {
     using SafeMath for uint;
@@ -46,6 +46,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     uint8 public constant CONTRIB_PERIODS = 3;                          // Number of Contribution Periods
 
     uint public minContribAmount = 100000000000000000;                  // 0.01 ether
+    uint public maxGasPrice = 50000000000;                              // 50 GWei
 
     uint public constant TEAM_VESTING_CLIFF = 24 weeks;                 // 6 months vesting cliff for founders and advisors, except community advisors
     uint public constant TEAM_VESTING_PERIOD = 96 weeks;                // 2 years vesting period for founders and advisors, except community advisors
@@ -66,7 +67,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
 
     struct ContribPeriod {
         uint softCapAmount;                                 // Soft cap of contribution period in wei
-        uint afterSoftCapDuration;                          // Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hardcap)
+        uint afterSoftCapDuration;                          // Number of seconds to the end of sale from the moment of reaching soft cap (unless reaching hardcap)
         uint hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
         uint startTime;                                     // Start time of contribution period in UNIX time
         uint endTime;                                       // End time of contribution period in UNIX time
@@ -141,9 +142,12 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         payable
         stopInEmergency
     {
+        require(tx.gasprice <= maxGasPrice);
+        require(msg.value >= minContribAmount);
+
         var periodIndex = getRunningContribPeriod();
         require(periodIndex < contribPeriods.length);
-        require(msg.value >= minContribAmount);
+
         if (contribPeriods[periodIndex].contributors[contributor].amount == 0) {
             contribPeriods[periodIndex].contributorsKeys.push(contributor);
         }
@@ -315,6 +319,20 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         contribPeriods[periodIndex].isEnabled = true;
     }
 
+    // @notice Disables back contribution period
+    // To be used only in case of unexpected change of plans
+    // Must be executed by multisignature
+    // @param periodIndex Contribution period index (0-2)
+    function disableContribPeriod(uint8 periodIndex)
+        onlymanyowners(sha3(msg.data))
+    {
+        require(contribPeriods[periodIndex].isEnabled);
+        require(getRunningContribPeriod() == CONTRIB_PERIODS);
+        require(contribPeriods[periodIndex].startTime > now);
+        require(!contribPeriods[periodIndex].isCancelled);
+        contribPeriods[periodIndex].isEnabled = false;
+    }
+
     // @notice Sets new min. contribution amount
     //  Only owner can execute
     //  Cannot be executed while contribution period is running
@@ -325,6 +343,18 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         require(_minContribAmount > 0);
         require(getRunningContribPeriod() == CONTRIB_PERIODS);
         minContribAmount = _minContribAmount;
+    }
+
+    // @notice Sets new max gas price for contribution
+    //  Only owner can execute
+    //  Cannot be executed while contribution period is running
+    // @param _minContribAmount new min. amount
+    function setMaxGasPrice(uint _maxGasPrice)
+        onlyOwner
+    {
+        require(_maxGasPrice > 0);
+        require(getRunningContribPeriod() == CONTRIB_PERIODS);
+        maxGasPrice = _maxGasPrice;
     }
 
     // @notice Sets District0xNetworkToken contract

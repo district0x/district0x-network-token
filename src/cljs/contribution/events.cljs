@@ -123,6 +123,25 @@
        :dispatch [:contribution/set-district0x-network-token address-index]})))
 
 (reg-event-fx
+  :deploy-multisig-wallet
+  interceptors
+  (fn [{:keys [db]} [{:keys [:multisig-wallet/owners :multisig-wallet/required]} address-index]]
+    (let [multisig-wallet (get-contract db :multisig-wallet)]
+      {:web3-fx.blockchain/fns
+       {:web3 (:web3 db)
+        :fns [[web3-eth/contract-new
+               (:abi multisig-wallet)
+               owners
+               required
+               {:gas 3300000
+                :data (:bin multisig-wallet)
+                :from (if address-index
+                        (nth (:my-addresses db) address-index)
+                        (:active-address db))}
+               [:district0x.log/info]
+               [:district0x.log/error :deploy-multisig-wallet]]]}})))
+
+(reg-event-fx
   :contribution/set-district0x-network-token
   interceptors
   (fn [{:keys [db]} [address-index]]

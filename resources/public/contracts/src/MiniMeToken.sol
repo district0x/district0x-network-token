@@ -1,8 +1,8 @@
 pragma solidity ^0.4.11;
 
-import "./interface/Controlled.sol";
-import "./interface/TokenController.sol";
-import "./interface/ApproveAndCallFallback.sol";
+import "./minime_interface/Controlled.sol";
+import "./minime_interface/TokenController.sol";
+import "./minime_interface/ApproveAndCallFallback.sol";
 import "./ERC20.sol";
 import "./SafeMath.sol";
 
