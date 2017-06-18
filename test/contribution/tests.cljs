@@ -509,6 +509,13 @@
                                  [(nth accounts 11) 1.5]
                                  [(nth accounts 12) 2]
                                  [(nth accounts 13) 2.5]]]
+
+              (testing "Users shouldn't be able to contribute with higer gas price than allowed"
+                (let [[contributor amount] (first contributions)]
+                  (is (u/error? (<! (state-call-ch! Contribution :contribute {:from contributor
+                                                                              :value-ether amount
+                                                                              :gas-price 51000000000}))))))
+
               (testing "Users should be able to contribute and hit hard cap"
                 (doseq [[contributor amount] (take 2 contributions)]
                   (is (u/tx-address? (<! (state-call-ch! Contribution :contribute {:from contributor

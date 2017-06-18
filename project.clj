@@ -14,7 +14,7 @@
                  [com.cemerick/url "0.1.1"]
                  [day8.re-frame/async-flow-fx "0.0.6"]
                  [day8.re-frame/http-fx "0.1.3"]
-                 [district0x "0.1.2"]
+                 [district0x "0.1.3"]
                  [lein-doo "0.1.7"]
                  [madvas.re-frame/google-analytics-fx "0.1.0"]
                  [madvas.re-frame/web3-fx "0.1.7"]

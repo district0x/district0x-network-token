@@ -1,5 +1,10 @@
 # district0x Contribution Period Flow (DNT Token Sale)
 
+<br><br>
+<p align="center">
+<img src="resources/public/images/dnt-logo-300.png"/>
+</p>
+
 ### Instantiation
 
 #### 1. Deploy contribution contract [District0xContribution.sol](/resources/public/contracts/src/District0xContribution.sol)
@@ -89,12 +94,6 @@ This method must be executed by multi-signature.
 
 Parameters:
 - _Contribution Period Index_: **1** Index number of contribution period to be enabled (1 or 2)
-
-<br><br>
-<p align="center">
-<img src="resources/public/images/dnt-logo-300.png"/>
-</p>
-
 
 
 

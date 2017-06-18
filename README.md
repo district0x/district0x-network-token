@@ -24,9 +24,10 @@ Multisig:
 
 ## Technical definition
 
-At the technical level DNT is a ERC20-compliant token, derived from the [MiniMe Token](https://github.com/Giveth/minime) that allows for token cloning (forking), which will be useful for many future usecases.
+At the technical level DNT is a ERC20-compliant token, derived from the [MiniMeToken](https://github.com/Giveth/minime) that allows for token cloning (forking), which will be useful for many future usecases.
 
-Also built in the token is a vesting schedule for limiting DNT transferability over time. district0x founders, advisors, early contributors all have vesting in their tokens.
+Vesting functionality derived from [VestedToken](https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/VestedToken.sol) 
+is also built-in into our token. Founders, advisors and early contributor have their tokens vested. 
 
 ## Contracts
 
