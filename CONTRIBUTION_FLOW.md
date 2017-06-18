@@ -1,9 +1,9 @@
 # district0x Contribution Period Flow (DNT Token Sale)
 
+<br>
 <p align="center">
 <img src="resources/public/images/dnt-logo-300.png"/>
 </p>
-<br>
 
 ### Instantiation
 
