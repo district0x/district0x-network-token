@@ -33,19 +33,19 @@ is also built-in into our token. Founders, advisors and early contributor have t
 
 Token:
 
-- [District0xNetworkToken.sol](/resources/public/contracts/src/District0xNetworkToken.sol): Main contract for the token. Derives MiniMeToken and VestedToken
+- [District0xNetworkToken.sol](/resources/public/contracts/src/District0xNetworkToken.sol): Main contract for DNT token. Derives MiniMeToken and VestedToken
 - [MiniMeToken.sol](/resources/public/contracts/src/MiniMeToken.sol): Our slightly modified version of Giveth's [MiniMeToken](https://github.com/Giveth/minime)
 - [VestedToken.sol](/resources/public/contracts/src/VestedToken.sol): Our slightly modified version of OpenZeppelin's [VestedToken](https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/VestedToken.sol)
 
 Contribution:
 
 - [District0xContribution.sol](/resources/public/contracts/src/District0xContribution.sol): Implementation of our token sale
-- [MultisigWallet.sol](/resources/public/contracts/src/District0xContribution.sol): Consensys multisig wallet used for distric0x funds
+- [MultisigWallet.sol](/resources/public/contracts/src/District0xContribution.sol): Consensys multisig wallet used for district0x funds
 
 ## Tests
-To run our smart-contracts tests you need to have [node](https://nodejs.org/en/) installed on your machine.
-Our tests are written in Clojurescript at [tests.cljs](/test/contribution/tests.cljs), but they are compiled into Javascript
-at [contribution-tests.js](/contribution-tests.js), so you don't need to do that. You can just run tests with following command:
+To run our smart-contract tests you need to have [node](https://nodejs.org/en/) installed on your machine.
+Our tests are written in Clojurescript here [tests.cljs](/test/contribution/tests.cljs), but they are compiled into Javascript
+here [contribution-tests.js](/contribution-tests.js), so you don't need to do that. You can just run tests with following command:
 ```bash
 node contribution-tests.js
 ```
