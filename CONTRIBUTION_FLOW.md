@@ -87,7 +87,14 @@ Parameters:
 - _limit_: Maximum number of contributors compensated with this transaction. Offset and limit parameters are 
 used to "paging" through contributors
 
-#### 10. Cancel following contribution period `District0xContribution.cancelContribPeriod()`
+#### 10. Enable DNT transfers `District0xContribution.enableDistrict0xNetworkTokenTransfers()`
+This method is called by owner after DNT tokens were distributed to all contributors. DNT transfers should be
+enabled in matter of hours after end of contribution period. We'll enable them as soon as we're sure that
+distribution of DNT went without bugs.
+
+No Parameters.
+
+#### 11. Cancel following contribution period `District0xContribution.cancelContribPeriod()`
 Second and third contribution period might be subject to cancellation if district0x doesn't need more funds to
 achieve goals stated in our roadmap. In this case tokens allocated for a contribution period will be destroyed.
 This method must be executed by multi-signature.
