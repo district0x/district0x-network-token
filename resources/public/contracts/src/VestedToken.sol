@@ -8,16 +8,19 @@ pragma solidity ^0.4.11;
     - Uses SafeMath.sol
     - In revokeTokenGrant method instead of manipulating balances manually, calls doTransfer method supplied by MiniMe
     - Added revokeAllTokenGrants method
+    - Added onlyGrantsController modifier to restrict creating grants only to single address
 */
 
 import "./LimitedTransferToken.sol";
 import "./SafeMath.sol";
+import "./GrantsControlled.sol";
 
 /**
  * @title Vested token
  * @dev Tokens that can be vested for a group of addresses.
  */
-contract VestedToken is LimitedTransferToken {
+
+contract VestedToken is LimitedTransferToken, GrantsControlled {
   using SafeMath for uint;
 
   uint256 MAX_GRANTS_PER_ADDRESS = 20;
@@ -52,7 +55,7 @@ contract VestedToken is LimitedTransferToken {
     uint64 _vesting,
     bool _revokable,
     bool _burnsOnRevoke
-  ) public {
+  ) onlyGrantsController public {
 
     // Check for date inconsistencies that may cause unexpected behavior
     if (_cliff < _start || _vesting < _cliff) {

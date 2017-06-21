@@ -16,5 +16,6 @@ contract District0xNetworkToken is MiniMeToken, VestedToken {
             )
     {
         changeController(_controller);
+        changeGrantsController(_controller);
     }
 }

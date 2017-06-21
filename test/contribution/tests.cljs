@@ -565,6 +565,18 @@
               (testing "Community advisors stake should not be vested"
                 (is (u/tx-address? (<! (state-call-ch! DNTToken :transfer {:from community-advisors
                                                                            :args [founder2 (eth->wei->num 1)]})))))
+
+              (testing "Other addresses besides contribution contract can't create vesting"
+                (is (u/error? (<! (state-call-ch! DNTToken :grant-vested-tokens
+                                                  {:from community-advisors
+                                                   :args [(nth accounts 12)
+                                                          (eth->wei->num 1)
+                                                          (+ now 120)
+                                                          (+ now 180)
+                                                          (+ now 300)
+                                                          false
+                                                          false]})))))
+
               (testing "Funds should not be vested after vesting period"
                 (<! (increase-time-and-mine-ch! web3 (time/in-seconds (time/weeks 24))))
                 (is (u/tx-address? (<! (state-call-ch! DNTToken :transfer {:from early-sponsor
