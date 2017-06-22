@@ -54,11 +54,6 @@
 (set! js/Web3 Web3)
 
 (def web3 (new Web3))
-(.setProvider web3 (.provider TestRPC (clj->js {:accounts (->> accounts-secrets
-                                                            (map (fn [secret]
-                                                                   {:balance (web3/to-wei 0x64 :ether)
-                                                                    :secretKey secret})))
-                                                :locked false})))
 
 (def ^:dynamic MiniMeTokenFactory nil)
 (def ^:dynamic Contribution nil)
@@ -92,6 +87,12 @@
 
 (defn deploy-contracts! [done]
   (go
+    (.setProvider web3 (.provider TestRPC (clj->js {:accounts (->> accounts-secrets
+                                                                (map (fn [secret]
+                                                                       {:balance (web3/to-wei 0x64 :ether)
+                                                                        :secretKey secret})))
+                                                    :locked false})))
+
     (let [mmtf-ch (chan)
           contrib-ch (chan)
           dnt-token-ch (chan)]
@@ -529,6 +530,14 @@
 
 
               (is (false? (<! (contrib-period-running?))))
+
+              (testing "Should properly handle sending extra amount above hard cap"
+                (is (bn/eq? (bn/+ wallet-balance-before hard-cap-amount)
+                            (<! (get-balance-ch web3 wallet))))
+
+                (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor 0 (nth accounts 11)))]
+                  (is (= (wei->eth->num contrib-amount) 1))
+                  (is (false? compensated?))))
 
               (testing "After hitting hard cap users shouldn't be able to contribute"
                 (doseq [[contributor amount] (drop 2 contributions)]

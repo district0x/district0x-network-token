@@ -147,16 +147,11 @@ contract District0xContribution is Shareable, Pausable, TokenController {
 
         var periodIndex = getRunningContribPeriod();
         require(periodIndex < contribPeriods.length);
-
-        if (contribPeriods[periodIndex].contributors[contributor].amount == 0) {
-            contribPeriods[periodIndex].contributorsKeys.push(contributor);
-        }
-        contribPeriods[periodIndex].contributors[contributor].amount =
-            contribPeriods[periodIndex].contributors[contributor].amount.add(msg.value);
+        var contribValue = msg.value;
 
         var oldTotalContributed = contribPeriods[periodIndex].totalContributed;
 
-        contribPeriods[periodIndex].totalContributed = oldTotalContributed.add(msg.value);
+        contribPeriods[periodIndex].totalContributed = oldTotalContributed.add(contribValue);
 
         var newTotalContributed = contribPeriods[periodIndex].totalContributed;
 
@@ -167,18 +162,32 @@ contract District0xContribution is Shareable, Pausable, TokenController {
             contribPeriods[periodIndex].softCapReached = true;
             contribPeriods[periodIndex].endTime = contribPeriods[periodIndex].afterSoftCapDuration.add(now);
             onSoftCapReached(periodIndex, contribPeriods[periodIndex].endTime);
-        } else
-        // Hard cao was reached
+        }
+        // Hard cap was reached
         if (newTotalContributed >= contribPeriods[periodIndex].hardCapAmount &&
-                   oldTotalContributed < contribPeriods[periodIndex].hardCapAmount)
+            oldTotalContributed < contribPeriods[periodIndex].hardCapAmount)
         {
             contribPeriods[periodIndex].hardCapReached = true;
             contribPeriods[periodIndex].endTime = now;
             onHardCapReached(periodIndex, contribPeriods[periodIndex].endTime);
+
+            // Everything above hard cap will be sent back to contributor
+            var extraContribValue = newTotalContributed.sub(contribPeriods[periodIndex].hardCapAmount);
+            contributor.transfer(extraContribValue);
+            contribValue = contribValue.sub(extraContribValue);
+
+            contribPeriods[periodIndex].totalContributed = contribPeriods[periodIndex].hardCapAmount;
         }
 
-        wallet.transfer(msg.value);
-        onContribution(periodIndex, newTotalContributed, contributor, msg.value,
+        if (contribPeriods[periodIndex].contributors[contributor].amount == 0) {
+            contribPeriods[periodIndex].contributorsKeys.push(contributor);
+        }
+
+        contribPeriods[periodIndex].contributors[contributor].amount =
+            contribPeriods[periodIndex].contributors[contributor].amount.add(contribValue);
+
+        wallet.transfer(contribValue);
+        onContribution(periodIndex, newTotalContributed, contributor, contribValue,
             contribPeriods[periodIndex].contributorsKeys.length);
     }
 
