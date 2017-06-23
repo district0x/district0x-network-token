@@ -59,7 +59,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
                                                                         // Can't be disabled back
 
     struct Contributor {
-        uint amount;                        // Amount of ETH contributed by an addrress in given contribution period
+        uint amount;                        // Amount of ETH contributed by an address in given contribution period
         bool isCompensated;                 // Whether this contributor received DNT token for ETH contribution
         uint amountCompensated;             // Amount of DNT received. Not really needed to store,
                                             // but stored for accounting and security purposes
@@ -72,7 +72,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         uint startTime;                                     // Start time of contribution period in UNIX time
         uint endTime;                                       // End time of contribution period in UNIX time
         bool isEnabled;                                     // If contribution period was enabled by multisignature
-        bool isCancelled;                                   // If contribution period was cancelled (only possible for 2. or 3. period)
+        bool isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
         bool softCapReached;                                // If soft cap was reached
         bool hardCapReached;                                // If hard cap was reached
         uint totalContributed;                              // Total amount of ETH contributed in given period
@@ -238,7 +238,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     //  Contribution period should still not be enabled after calling this method
     // @param i Contribution period index (0-2)
     // @param softCapAmount Soft Cap in wei
-    // @param afterSoftCapDuration Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hardcap)
+    // @param afterSoftCapDuration Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hard cap)
     // @param hardCapAmount Hard Cap in wei
     // @param startTime Contribution start time in UNIX time
     // @param endTime Contribution end time in UNIX time
@@ -298,10 +298,10 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         }
     }
 
-    // @notice Cancelles contribution period by destroying tokes reserved for it
+    // @notice Cancels contribution period by destroying tokes reserved for it
     //  Must be executed by multisignature of many owners
-    //  First contribution period can't be cancelled
-    //  Past contribution period can't be cancelled
+    //  First contribution period can't be canceled
+    //  Past contribution period can't be canceled
     // @param periodIndex Contribution period index (1-2)
     function cancelContribPeriod(uint periodIndex)
         onlymanyowners(sha3(msg.data))
@@ -367,7 +367,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     }
 
     // @notice Sets District0xNetworkToken contract
-    //  Generates all DNT tokens and assignes them to this contract
+    //  Generates all DNT tokens and assigns them to this contract
     //  If token contract has already generated tokens, do not generate again
     // @param _district0xNetworkToken District0xNetworkToken address
     function setDistrict0xNetworkToken(address _district0xNetworkToken)
