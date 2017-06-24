@@ -31,115 +31,68 @@
     {:db (assoc db :now (t/now))}))
 
 (reg-event-fx
-  :deploy-all-contracts
+  :deploy-contribution-contract
   interceptors
   (fn [{:keys [db]} [contribution-args address-index]]
-    (let [contribution (get-contract db :contribution)]
-      {:web3-fx.blockchain/fns
-       {:web3 (:web3 db)
-        :fns [[web3-eth/contract-new
-               (:abi contribution)
-               (:contribution/owners contribution-args)
-               (:contribution/required-count contribution-args)
-               (:contribution/wallet contribution-args)
-               (:contribution/founder1 contribution-args)
-               (:contribution/founder2 contribution-args)
-               (:contribution/early-sponsor contribution-args)
-               (:contribution/advisers contribution-args)
-               {:gas 4500000
-                :data (:bin contribution)
-                :from (if address-index
-                        (nth (:my-addresses db) address-index)
-                        (:active-address db))}
-               [:contribution-contract-deployed address-index]
-               [:district0x.log/error :deploy-all-contracts]]]}})))
+    {:dispatch [:district0x/deploy-contract {:address-index address-index
+                                             :contract-key :contribution
+                                             :gas 4500000
+                                             :args ((juxt :contribution/owners
+                                                          :contribution/required-count
+                                                          :contribution/wallet
+                                                          :contribution/founder1
+                                                          :contribution/founder2
+                                                          :contribution/early-sponsor
+                                                          :contribution/advisers)
+                                                     contribution-args)
+                                             :on-success [:contribution-contract-deployed]}]}))
 
 (reg-event-fx
   :contribution-contract-deployed
-  [interceptors (inject-cofx :localstorage)]
-  (fn [{:keys [db localstorage]} [address-index instance]]
-    (when-let [contract-address (aget instance "address")]
-      (console :log :contribution " deployed at " contract-address)
-      {:db (update-in db [:smart-contracts :contribution] merge {:address contract-address :instance instance})
-       :localstorage (assoc-in localstorage [:smart-contracts :contribution] {:address contract-address})
-       :dispatch [:deploy-mini-me-token-factory-contract address-index]})))
+  (constantly nil))
 
 (reg-event-fx
   :deploy-mini-me-token-factory-contract
   interceptors
   (fn [{:keys [db]} [address-index]]
-    (let [mini-me-token-factory (get-contract db :mini-me-token-factory)]
-      {:web3-fx.blockchain/fns
-       {:web3 (:web3 db)
-        :fns [[web3-eth/contract-new
-               (:abi mini-me-token-factory)
-               {:gas 3000000
-                :data (:bin mini-me-token-factory)
-                :from (if address-index
-                        (nth (:my-addresses db) address-index)
-                        (:active-address db))}
-               [:mini-me-token-factory-deployed address-index]
-               [:district0x.log/error :deploy-mini-me-token-factory-contract]]]}})))
+    {:dispatch [:district0x/deploy-contract {:address-index address-index
+                                             :contract-key :mini-me-token-factory
+                                             :gas 3000000
+                                             :on-success [:mini-me-token-factory-deployed]}]}))
 
 (reg-event-fx
-  :mini-me-token-factory-deployed                           ; TODO generalize *-deployed event
-  [interceptors (inject-cofx :localstorage)]
-  (fn [{:keys [db localstorage]} [address-index instance]]
-    (when-let [contract-address (aget instance "address")]
-      (console :log :mini-me-token-factory " deployed at " contract-address)
-      {:db (update-in db [:smart-contracts :mini-me-token-factory] merge {:address contract-address :instance instance})
-       :localstorage (assoc-in localstorage [:smart-contracts :mini-me-token-factory] {:address contract-address})
-       :dispatch [:deploy-dnt-token-contract address-index]})))
+  :mini-me-token-factory-deployed
+  (constantly nil))
 
 (reg-event-fx
   :deploy-dnt-token-contract
   interceptors
   (fn [{:keys [db]} [address-index]]
-    (let [dnt-token (get-contract db :dnt-token)
-          contribution-address (:address (get-contract db :contribution))
+    (let [contribution-address (:address (get-contract db :contribution))
           mini-me-token-factory-address (:address (get-contract db :mini-me-token-factory))]
-      {:web3-fx.blockchain/fns
-       {:web3 (:web3 db)
-        :fns [[web3-eth/contract-new
-               (:abi dnt-token)
-               contribution-address
-               mini-me-token-factory-address
-               {:gas 3300000
-                :data (:bin dnt-token)
-                :from (if address-index
-                        (nth (:my-addresses db) address-index)
-                        (:active-address db))}
-               [:dnt-token-contract-deployed address-index]
-               [:district0x.log/error :deploy-dnt-token-contract]]]}})))
+      {:dispatch [:district0x/deploy-contract {:address-index address-index
+                                               :contract-key :dnt-token
+                                               :gas 3300000
+                                               :args [contribution-address mini-me-token-factory-address]
+                                               :on-success [:dnt-token-contract-deployed]}]})))
 
 (reg-event-fx
   :dnt-token-contract-deployed
-  [interceptors (inject-cofx :localstorage)]
-  (fn [{:keys [db localstorage]} [address-index instance]]
-    (when-let [contract-address (aget instance "address")]
-      (console :log :dnt-token " deployed at " contract-address)
-      {:db (update-in db [:smart-contracts :dnt-token] merge {:address contract-address :instance instance})
-       :localstorage (assoc-in localstorage [:smart-contracts :dnt-token] {:address contract-address})
-       :dispatch [:contribution/set-district0x-network-token address-index]})))
+  (constantly nil))
 
 (reg-event-fx
   :deploy-multisig-wallet
   interceptors
   (fn [{:keys [db]} [{:keys [:multisig-wallet/owners :multisig-wallet/required]} address-index]]
-    (let [multisig-wallet (get-contract db :multisig-wallet)]
-      {:web3-fx.blockchain/fns
-       {:web3 (:web3 db)
-        :fns [[web3-eth/contract-new
-               (:abi multisig-wallet)
-               owners
-               required
-               {:gas 3300000
-                :data (:bin multisig-wallet)
-                :from (if address-index
-                        (nth (:my-addresses db) address-index)
-                        (:active-address db))}
-               [:district0x.log/info]
-               [:district0x.log/error :deploy-multisig-wallet]]]}})))
+    {:dispatch [:district0x/deploy-contract {:address-index address-index
+                                             :contract-key :multisig-wallet
+                                             :gas 3300000
+                                             :args [owners required]
+                                             :on-success [:multisig-wallet-deployed]}]}))
+
+(reg-event-fx
+  :multisig-wallet-deployed
+  (constantly nil))
 
 (reg-event-fx
   :contribution/set-district0x-network-token
@@ -153,7 +106,13 @@
                    :transaction-opts {:gas 300000
                                       :from (if address-index
                                               (nth (:my-addresses db) address-index)
-                                              (:active-address db))}}]})))
+                                              (:active-address db))}
+                   :on-receipt-n [[:contribution/get-contrib-period constants/current-contrib-period]
+                                  [:contribution/district0x-network-token-was-set]]}]})))
+
+(reg-event-fx
+  :contribution/district0x-network-token-was-set
+  (constantly nil))
 
 (reg-event-fx
   :contribution/setup-event-listeners
@@ -223,7 +182,12 @@
                                     :from (if address-index
                                             (nth (:my-addresses db) address-index)
                                             (:active-address db))}
-                 :receipt-dispatch [:contribution/get-contrib-period constants/current-contrib-period]}]}))
+                 :on-receipt-n [[:contribution/get-contrib-period constants/current-contrib-period]
+                                [:contribution/contrib-period-was-set]]}]}))
+
+(reg-event-fx
+  :contribution/contrib-period-was-set
+  (constantly nil))
 
 (reg-event-fx
   :contribution/get-contrib-period
@@ -275,7 +239,7 @@
                  :fn-key :contribution/contribute
                  :fn-args (constants/eth-contracts-fns :contribution/contribute)
                  :form-key :form.contribution/contribute
-                 :receipt-dispatch [:district0x.snackbar/show-message "Thank you! Your contribution was successfully sent"]}]}))
+                 :on-receipt [:district0x.snackbar/show-message "Thank you! Your contribution was successfully sent"]}]}))
 
 (reg-event-fx
   :contribution/enable-contrib-period
@@ -287,8 +251,8 @@
                  :fn-key :contribution/enable-contrib-period
                  :fn-args (constants/eth-contracts-fns :contribution/enable-contrib-period)
                  :form-key :form.contribution/enable-contrib-period
-                 :receipt-dispatch-n [[:district0x.snackbar/show-message "Your agreement to enable contribution was successfully sent"]
-                                      [:contribution/get-contrib-period constants/current-contrib-period]]}]}))
+                 :on-receipt-n [[:district0x.snackbar/show-message "Your agreement to enable contribution was successfully sent"]
+                                [:contribution/get-contrib-period constants/current-contrib-period]]}]}))
 
 (reg-event-fx
   :contribution/emergency-stop
@@ -374,34 +338,49 @@
        :async-flow {:first-dispatch [:district0x/load-smart-contracts {:version constants/contracts-version}]
                     :rules [{:when :seen?
                              :events [:district0x/smart-contracts-loaded]
-                             :dispatch-n [[:deploy-all-contracts
-                                           (merge
-                                             (when (<= 10 (count my-addresses))
-                                               {:contribution/owners (take 2 my-addresses)
-                                                :contribution/required-count 1
-                                                :contribution/founder1 (first my-addresses)
-                                                :contribution/founder2 (second my-addresses)
-                                                :contribution/early-sponsor (first my-addresses)
-                                                :contribution/wallet (nth my-addresses 3)
-                                                :contribution/advisers (drop 4 (take 8 my-addresses))})
-                                             contribution-args)
-                                           address-index]]
+                             :dispatch [:deploy-contribution-contract
+                                        (merge
+                                          (when (<= 10 (count my-addresses))
+                                            {:contribution/owners (take 2 my-addresses)
+                                             :contribution/required-count 1
+                                             :contribution/founder1 (first my-addresses)
+                                             :contribution/founder2 (second my-addresses)
+                                             :contribution/early-sponsor (first my-addresses)
+                                             :contribution/wallet (nth my-addresses 3)
+                                             :contribution/advisers (drop 4 (take 8 my-addresses))})
+                                          contribution-args)
+                                        address-index]}
+                            {:when :seen?
+                             :events [:contribution-contract-deployed]
+                             :dispatch [:deploy-mini-me-token-factory-contract address-index]}
+                            {:when :seen?
+                             :events [:mini-me-token-factory-deployed]
+                             :dispatch [:deploy-dnt-token-contract address-index]}
+                            {:when :seen?
+                             :events [:dnt-token-contract-deployed]
+                             :dispatch [:contribution/set-district0x-network-token address-index]
                              :halt? true}]}})))
 
 (reg-event-fx
-  :reinitialize+start-contribution
+  :reinitialize+start-contribution-period
   interceptors
   (fn [{:keys [:db]}]
-    {:dispatch [:reinitialize]
-     :dispatch-later [{:ms 3000 :dispatch [:contribution/set-contrib-period
-                                           {:contribution/period-index 0
-                                            :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 5)))
-                                            :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
-                                            :contrib-period/soft-cap-amount (u/eth->wei 5)
-                                            :contrib-period/hard-cap-amount (u/eth->wei 100)
-                                            :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 30))}
-                                           0]}
-                      {:ms 4000 :dispatch [:contribution/enable-contrib-period {:contribution/period-index 0}]}]}))
+    {:async-flow
+     {:first-dispatch [:reinitialize]
+      :rules [{:when :seen?
+               :events [:contribution/district0x-network-token-was-set]
+               :dispatch [:contribution/set-contrib-period
+                          {:contribution/period-index 0
+                           :contrib-period/start-time (time-coerce/to-epoch (t/plus (t/now) (t/seconds 5)))
+                           :contrib-period/end-time (time-coerce/to-epoch (t/plus (t/now) (t/hours 2)))
+                           :contrib-period/soft-cap-amount (u/eth->wei 5)
+                           :contrib-period/hard-cap-amount (u/eth->wei 100)
+                           :contrib-period/after-soft-cap-duration (t/in-seconds (t/minutes 30))}
+                          0]}
+              {:when :seen?
+               :events [:contribution/contrib-period-was-set]
+               :dispatch [:contribution/enable-contrib-period {:contribution/period-index 0}]
+               :halt? true}]}}))
 
 (comment
   (dispatch [:contribution/set-contrib-period

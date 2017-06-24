@@ -458,7 +458,7 @@
         contracts-not-found? (subscribe [:district0x/contracts-not-found?])
         xs-width? (subscribe [:district0x/window-xs-width?])]
     (fn []
-      [ui/mui-theme-provider
+      [misc/main-panel
        {:mui-theme styles/mui-theme}
        [:div
         {:style {:padding-bottom 20
@@ -478,8 +478,6 @@
           :style styles/app-bar
           :title (r/as-element [logo])
           :icon-element-right (r/as-element [app-bar-right-elements])}]
-        [ui/snackbar (-> @snackbar
-                       (set/rename-keys {:open? :open}))]
         [:div {:style (merge styles/content-wrap
                              (when @xs-width?
                                (styles/padding-all styles/desktop-gutter-mini)))}

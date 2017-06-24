@@ -3,21 +3,11 @@
   :url "http://contribution.district0x.io"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[akiroz.re-frame/storage "0.1.1"]
-                 [bidi "2.0.14"]
-                 [cljs-ajax "0.5.9"]
-                 [cljs-react-material-ui "0.2.44"]
+  :dependencies [[cljs-react-material-ui "0.2.44"]
                  [cljs-web3 "0.19.0-0-2"]
-                 [cljsjs/bignumber "2.1.4-1"]
-                 [cljsjs/react-flexbox-grid "1.0.0-0" :exclusions [cljsjs/react cljsjs/react-dom]]
-                 [com.andrewmcveigh/cljs-time "0.4.0"]
-                 [com.cemerick/url "0.1.1"]
                  [day8.re-frame/async-flow-fx "0.0.6"]
-                 [day8.re-frame/http-fx "0.1.3"]
-                 [district0x "0.1.3"]
+                 [district0x "0.1.5"]
                  [lein-doo "0.1.7"]
-                 [madvas.re-frame/google-analytics-fx "0.1.0"]
-                 [madvas.re-frame/web3-fx "0.1.7"]
                  [madvas/reagent-patched "0.6.1" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [medley "0.8.3"]
                  [org.clojure/clojurescript "1.9.227"]
