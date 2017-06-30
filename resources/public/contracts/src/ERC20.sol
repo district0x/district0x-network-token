@@ -19,16 +19,6 @@ contract ERC20 is ERC20Basic {
 
   mapping(address => uint) balances;
 
-  /*
-   * Fix for the ERC20 short address attack
-   */
-  modifier onlyPayloadSize(uint size) {
-     if(msg.data.length < size + 4) {
-       throw;
-     }
-     _;
-  }
-
   function allowance(address owner, address spender) constant returns (uint);
   function transferFrom(address from, address to, uint value) returns (bool);
   function approve(address spender, uint value) returns (bool);

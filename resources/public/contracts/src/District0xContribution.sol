@@ -33,19 +33,18 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     address public earlySponsor;                                        // Wallet of early sponsor
     address[] public advisers;                                          // 4 Wallets of advisors
 
-    uint public constant FOUNDER1_STAKE = 120000000000000000000000000;              // 120M DNT
-    uint public constant FOUNDER2_STAKE = 80000000000000000000000000;               // 80M  DNT
-    uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000000000000000000000;       // 5M   DNT
-    uint public constant ADVISER_STAKE = 5000000000000000000000000;                 // 5M   DNT
-    uint public constant LEGAL_ADVISER_STAKE = 2000000000000000000000000;           // 2M   DNT
-    uint public constant COMMUNITY_ADVISERS_STAKE = 3000000000000000000000000;      // 3M   DNT
-    uint public constant CONTRIB_PERIOD1_STAKE = 600000000000000000000000000;       // 600M DNT
-    uint public constant CONTRIB_PERIOD2_STAKE = 140000000000000000000000000;       // 140M DNT
-    uint public constant CONTRIB_PERIOD3_STAKE = 40000000000000000000000000;        // 40M  DNT
+    uint public constant FOUNDER1_STAKE = 120000000 ether;              // 120M DNT
+    uint public constant FOUNDER2_STAKE = 80000000 ether;               // 80M  DNT
+    uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000 ether;       // 5M   DNT
+    uint public constant ADVISER_STAKE = 5000000 ether;                 // 5M   DNT
+    uint public constant COMMUNITY_ADVISERS_STAKE = 5000000 ether;      // 5M   DNT
+    uint public constant CONTRIB_PERIOD1_STAKE = 600000000 ether;       // 600M DNT
+    uint public constant CONTRIB_PERIOD2_STAKE = 140000000 ether;       // 140M DNT
+    uint public constant CONTRIB_PERIOD3_STAKE = 40000000 ether;        // 40M  DNT
 
     uint8 public constant CONTRIB_PERIODS = 3;                          // Number of Contribution Periods
 
-    uint public minContribAmount = 100000000000000000;                  // 0.01 ether
+    uint public minContribAmount = 0.01 ether;                          // 0.01 ether
     uint public maxGasPrice = 50000000000;                              // 50 GWei
 
     uint public constant TEAM_VESTING_CLIFF = 24 weeks;                 // 6 months vesting cliff for founders and advisors, except community advisors
@@ -99,7 +98,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     )
         Shareable(_owners, _required)
     {
-        require(_advisers.length == 4);
+        require(_advisers.length == 3);
         wallet = _wallet;
         founder1 = _founder1;
         founder2 = _founder2;
@@ -118,8 +117,9 @@ contract District0xContribution is Shareable, Pausable, TokenController {
             ContribPeriod contribPeriod = contribPeriods[i];
             if (!contribPeriod.hardCapReached &&
                 contribPeriod.isEnabled &&
+                !contribPeriod.isCancelled &&
                 contribPeriod.startTime <= now &&
-                contribPeriod.endTime >= now) {
+                contribPeriod.endTime > now) {
                     return i;
                 }
         }
@@ -145,15 +145,16 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         require(tx.gasprice <= maxGasPrice);
         require(msg.value >= minContribAmount);
 
-        var periodIndex = getRunningContribPeriod();
+        uint periodIndex = getRunningContribPeriod();
         require(periodIndex < contribPeriods.length);
-        var contribValue = msg.value;
+        uint contribValue = msg.value;
+        uint excessContribValue = 0;
 
-        var oldTotalContributed = contribPeriods[periodIndex].totalContributed;
+        uint oldTotalContributed = contribPeriods[periodIndex].totalContributed;
 
         contribPeriods[periodIndex].totalContributed = oldTotalContributed.add(contribValue);
 
-        var newTotalContributed = contribPeriods[periodIndex].totalContributed;
+        uint newTotalContributed = contribPeriods[periodIndex].totalContributed;
 
         // Soft cap was reached
         if (newTotalContributed >= contribPeriods[periodIndex].softCapAmount &&
@@ -172,9 +173,8 @@ contract District0xContribution is Shareable, Pausable, TokenController {
             onHardCapReached(periodIndex, contribPeriods[periodIndex].endTime);
 
             // Everything above hard cap will be sent back to contributor
-            var extraContribValue = newTotalContributed.sub(contribPeriods[periodIndex].hardCapAmount);
-            contributor.transfer(extraContribValue);
-            contribValue = contribValue.sub(extraContribValue);
+            excessContribValue = newTotalContributed.sub(contribPeriods[periodIndex].hardCapAmount);
+            contribValue = contribValue.sub(excessContribValue);
 
             contribPeriods[periodIndex].totalContributed = contribPeriods[periodIndex].hardCapAmount;
         }
@@ -187,8 +187,11 @@ contract District0xContribution is Shareable, Pausable, TokenController {
             contribPeriods[periodIndex].contributors[contributor].amount.add(contribValue);
 
         wallet.transfer(contribValue);
+        if (excessContribValue > 0) {
+            contributor.transfer(excessContribValue);
+        }
         onContribution(periodIndex, newTotalContributed, contributor, contribValue,
-            contribPeriods[periodIndex].contributorsKeys.length);
+                    contribPeriods[periodIndex].contributorsKeys.length);
     }
 
     // @notice This method is called by owner after contribution period ends, to distribute DNT in proportional manner
@@ -217,7 +220,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         while (i < contributorsCount && compensatedCount < limit) {
             address contributorAddress = contributorsKeys[i];
             if (!contribPeriod.contributors[contributorAddress].isCompensated) {
-                var amountContributed = contribPeriod.contributors[contributorAddress].amount;
+                uint amountContributed = contribPeriod.contributors[contributorAddress].amount;
                 contribPeriod.contributors[contributorAddress].isCompensated = true;
 
                 contribPeriod.contributors[contributorAddress].amountCompensated =
@@ -279,11 +282,10 @@ contract District0xContribution is Shareable, Pausable, TokenController {
             district0xNetworkToken.grantVestedTokens(earlySponsor, EARLY_CONTRIBUTOR_STAKE, startDate, earlyContribCliffDate, earlyContribVestingDate, true, false);
             district0xNetworkToken.grantVestedTokens(advisers[0], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
             district0xNetworkToken.grantVestedTokens(advisers[1], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(advisers[2], LEGAL_ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
 
             // Community advisors stake has no vesting, but we set it up this way, so we can revoke it in case of
             // re-setting up contribution period
-            district0xNetworkToken.grantVestedTokens(advisers[3], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
+            district0xNetworkToken.grantVestedTokens(advisers[2], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
         }
 
         address[] memory contributorsKeys;
@@ -380,7 +382,6 @@ contract District0xContribution is Shareable, Pausable, TokenController {
                 .add(FOUNDER2_STAKE)
                 .add(EARLY_CONTRIBUTOR_STAKE)
                 .add(ADVISER_STAKE.mul(2))
-                .add(LEGAL_ADVISER_STAKE)
                 .add(COMMUNITY_ADVISERS_STAKE)
                 .add(CONTRIB_PERIOD1_STAKE)
                 .add(CONTRIB_PERIOD2_STAKE)
@@ -482,7 +483,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         constant
         returns (uint[] contributorIndexes)
     {
-        var contributorsCount = contribPeriods[periodIndex].contributorsKeys.length;
+        uint contributorsCount = contribPeriods[periodIndex].contributorsKeys.length;
 
         if (limit == 0) {
             limit = contributorsCount;
@@ -490,7 +491,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
 
         uint i = offset;
         uint resultsCount = 0;
-        var _contributorIndexes = new uint[](limit);
+        uint[] memory _contributorIndexes = new uint[](limit);
         address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
         ContribPeriod contribPeriod = contribPeriods[periodIndex];
 

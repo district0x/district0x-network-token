@@ -67,8 +67,7 @@
 (def early-sponsor (nth accounts 4))
 (def adviser1 (nth accounts 5))
 (def adviser2 (nth accounts 6))
-(def legal-adviser (nth accounts 7))
-(def community-advisors (nth accounts 8))
+(def community-advisors (nth accounts 7))
 
 (defn- get-dnt-balance [address]
   (contract-call-ch (chan 1 (map wei->eth->num)) DNTToken :balance-of address))
@@ -114,7 +113,7 @@
          :bin (fetch-bin "District0xContribution")
          :res-ch contrib-ch
          :gas 4500000
-         :args [[owner1 owner2] 2 wallet founder1 founder2 early-sponsor [adviser1 adviser2 legal-adviser community-advisors]]})
+         :args [[owner1 owner2] 2 wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})
 
       (set! Contribution (<! contrib-ch))
 
@@ -159,8 +158,7 @@
       (is (= early-sponsor (<! (contract-call-ch Contribution :early-sponsor))))
       (is (= adviser1 (<! (contract-call-ch Contribution :advisers 0))))
       (is (= adviser2 (<! (contract-call-ch Contribution :advisers 1))))
-      (is (= legal-adviser (<! (contract-call-ch Contribution :advisers 2))))
-      (is (= community-advisors (<! (contract-call-ch Contribution :advisers 3))))
+      (is (= community-advisors (<! (contract-call-ch Contribution :advisers 2))))
       (is (= owner1 (<! (contract-call-ch Contribution :get-owner 1))))
       (is (= owner2 (<! (contract-call-ch Contribution :get-owner 2))))
       (is (= 1000000000 (wei->eth->num (<! (contract-call-ch DNTToken :total-supply)))))
@@ -171,7 +169,6 @@
       (is (= 0 (<! (get-dnt-balance early-sponsor))))
       (is (= 0 (<! (get-dnt-balance adviser1))))
       (is (= 0 (<! (get-dnt-balance adviser2))))
-      (is (= 0 (<! (get-dnt-balance legal-adviser))))
       (is (= 0 (<! (get-dnt-balance community-advisors))))
       (is (= 1000000000 (<! (get-dnt-balance (aget Contribution "address")))))
       (done))))
@@ -221,12 +218,11 @@
               (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
               (is (= 5000000 (<! (get-dnt-balance adviser1))))
               (is (= 5000000 (<! (get-dnt-balance adviser2))))
-              (is (= 2000000 (<! (get-dnt-balance legal-adviser))))
-              (is (= 3000000 (<! (get-dnt-balance community-advisors))))
+              (is (= 5000000 (<! (get-dnt-balance community-advisors))))
               (is (= 780000000 (<! (get-dnt-balance (aget Contribution "address")))))
 
               (testing "Token grants are setup okay"
-                (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 legal-adviser community-advisors]]
+                (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 community-advisors]]
                   (is (bn/eq? (<! (contract-call-ch DNTToken :token-grants-count founder1)) 1))
                   (let [[granter amount vested-amount start-date cliff-date vesting-date]
                         (<! (contract-call-ch DNTToken :token-grant founder1 0))]
@@ -259,8 +255,7 @@
                 (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
                 (is (= 5000000 (<! (get-dnt-balance adviser1))))
                 (is (= 5000000 (<! (get-dnt-balance adviser2))))
-                (is (= 2000000 (<! (get-dnt-balance legal-adviser))))
-                (is (= 3000000 (<! (get-dnt-balance community-advisors))))
+                (is (= 5000000 (<! (get-dnt-balance community-advisors))))
                 (is (= 780000000 (<! (get-dnt-balance (aget Contribution "address"))))))
 
               (testing "Only one owner shouldn't be able to enable contribution period"

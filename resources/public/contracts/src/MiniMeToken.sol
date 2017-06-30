@@ -13,7 +13,6 @@ import "./SafeMath.sol";
     - Split contracts into multiple files
     - Use SafeMath.sol
     - Make it descendant of ERC20
-    - Add onlyPayloadSize modifier
 */
 
 /// @dev The actual token contract, the default controller is the msg.sender
@@ -113,7 +112,7 @@ contract MiniMeToken is ERC20, Controlled {
     /// @param _to The address of the recipient
     /// @param _amount The amount of tokens to be transferred
     /// @return Whether the transfer was successful or not
-    function transfer(address _to, uint256 _amount) onlyPayloadSize(2 * 32) returns (bool success) {
+    function transfer(address _to, uint256 _amount) returns (bool success) {
         if (!transfersEnabled) throw;
         return doTransfer(msg.sender, _to, _amount);
     }
@@ -125,7 +124,7 @@ contract MiniMeToken is ERC20, Controlled {
     /// @param _amount The amount of tokens to be transferred
     /// @return True if the transfer was successful
     function transferFrom(address _from, address _to, uint256 _amount
-    ) onlyPayloadSize(3 * 32) returns (bool success) {
+    ) returns (bool success) {
 
         // The controller of this contract can move tokens around at will,
         //  this is important to recognize! Confirm that you trust the
