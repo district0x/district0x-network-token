@@ -21,9 +21,10 @@ import "./SafeMath.sol";
 import "./District0xNetworkToken.sol";
 import "./Shareable.sol";
 import "./Pausable.sol";
+import "./HasNoTokens.sol";
 import "./minime_interface/TokenController.sol";
 
-contract District0xContribution is Shareable, Pausable, TokenController {
+contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenController {
     using SafeMath for uint;
 
     District0xNetworkToken public district0xNetworkToken;
@@ -86,6 +87,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         uint contributorsCount);
     event onSoftCapReached(uint indexed contribPeriodIndex, uint endTime);
     event onHardCapReached(uint indexed contribPeriodIndex, uint endTime);
+    event onCompensated(uint indexed contribPeriodIndex, address indexed contributor, uint amount);
 
     function District0xContribution(
         address[] _owners,          // Addresses allowed to run functions in this contract with "onlymanyowners" modifier
@@ -201,10 +203,9 @@ contract District0xContribution is Shareable, Pausable, TokenController {
     // @param periodIndex Index of contribution period (0-2)
     // @param offset Number of first contributors to skip.
     // @param limit Max number of contributors compensated on this call
-    function compensateContributors(uint periodIndex, uint offset, uint limit)
-        onlyOwner
-    {
+    function compensateContributors(uint periodIndex, uint offset, uint limit) {
         require(contribPeriods[periodIndex].isEnabled);
+        require(!contribPeriods[periodIndex].isCancelled);
         require(contribPeriods[periodIndex].endTime < now);
 
         uint i = offset;
@@ -227,6 +228,9 @@ contract District0xContribution is Shareable, Pausable, TokenController {
                     amountContributed.mul(ratio).div(1000000000000000000);
 
                 district0xNetworkToken.transfer(contributorAddress,
+                    contribPeriod.contributors[contributorAddress].amountCompensated);
+
+                onCompensated(periodIndex, contributorAddress,
                     contribPeriod.contributors[contributorAddress].amountCompensated);
 
                 compensatedCount++;
@@ -325,7 +329,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         onlymanyowners(sha3(msg.data))
     {
         require(periodIndex < contribPeriods.length);
-        require(contribPeriods[periodIndex].startTime > 0);
+        require(contribPeriods[periodIndex].startTime > now);
         require(!contribPeriods[periodIndex].isCancelled);
         contribPeriods[periodIndex].isEnabled = true;
     }
@@ -376,6 +380,7 @@ contract District0xContribution is Shareable, Pausable, TokenController {
         onlyOwner
     {
         require(_district0xNetworkToken != 0x0);
+        require(contribPeriods.length == 0);
         district0xNetworkToken = District0xNetworkToken(_district0xNetworkToken);
         if (district0xNetworkToken.totalSupply() == 0) {
             district0xNetworkToken.generateTokens(this, FOUNDER1_STAKE
