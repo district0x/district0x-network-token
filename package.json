@@ -1,0 +1,29 @@
+{
+  "name": "contribution",
+  "version": "1.0.0",
+  "description": "<img src=\"resources/public/images/dnt-header.jpg\"/>",
+  "main": "contribution-tests.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {
+    "solc": "0.4.11",
+    "web3": "0.19.0",
+    "ws": "2.0.1",
+    "ethereumjs-testrpc": "3.0.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/district0x/district0x-network-token.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/district0x/district0x-network-token/issues"
+  },
+  "homepage": "https://github.com/district0x/district0x-network-token#readme"
+}

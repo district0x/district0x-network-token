@@ -45,7 +45,8 @@ Contribution:
 ## Tests
 To run our smart-contract tests you need to have [node](https://nodejs.org/en/) installed on your machine.
 Our tests are written in Clojurescript here [tests.cljs](/test/contribution/tests.cljs), but they are compiled into Javascript
-here [contribution-tests.js](/contribution-tests.js), so you don't need to do that. You can just run tests with following command:
+here [contribution-tests.js](/contribution-tests.js), so you don't need to do that. You can just run tests with following commands:
 ```bash
+npm install
 node contribution-tests.js
 ```
