@@ -5,6 +5,7 @@ solc --overwrite --optimize --bin --abi District0xNetworkToken.sol -o ../build/
 solc --overwrite --optimize --bin --abi MultisigWallet.sol -o ../build/
 solc --overwrite --optimize --bin --abi District0xContribution.sol -o ../build/
 
+
 cd ../build
 wc -c District0xNetworkToken.bin | awk '{print "District0xNetworkToken: " $1}'
 wc -c District0xContribution.bin | awk '{print "District0xContribution: " $1}'

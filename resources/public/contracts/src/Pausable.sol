@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
 
-import "./Shareable.sol";
+import "./Ownable.sol";
 
 
 /*
@@ -10,7 +10,7 @@ import "./Shareable.sol";
  * emergency stop mechanism.
  * Made by OpenZeppelin https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/lifecycle/Pausable.sol
  */
-contract Pausable is Shareable {
+contract Pausable is Ownable {
   bool public stopped;
   event onEmergencyChanged(bool isStopped);
 

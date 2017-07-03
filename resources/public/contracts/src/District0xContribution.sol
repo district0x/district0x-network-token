@@ -19,16 +19,16 @@ pragma solidity ^0.4.11;
 
 import "./SafeMath.sol";
 import "./District0xNetworkToken.sol";
-import "./Shareable.sol";
+import "./Ownable.sol";
 import "./Pausable.sol";
 import "./HasNoTokens.sol";
 import "./minime_interface/TokenController.sol";
 
-contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenController {
+contract District0xContribution is Pausable, HasNoTokens, TokenController {
     using SafeMath for uint;
 
     District0xNetworkToken public district0xNetworkToken;
-    address public wallet;                                              // Wallet that receives all sale funds
+    address public multisigWallet;                                      // Wallet that receives all sale funds
     address public founder1;                                            // Wallet of founder 1
     address public founder2;                                            // Wallet of founder 2
     address public earlySponsor;                                        // Wallet of early sponsor
@@ -50,7 +50,7 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
 
     uint public constant TEAM_VESTING_CLIFF = 24 weeks;                 // 6 months vesting cliff for founders and advisors, except community advisors
     uint public constant TEAM_VESTING_PERIOD = 96 weeks;                // 2 years vesting period for founders and advisors, except community advisors
-    
+
     uint public constant EARLY_CONTRIBUTOR_VESTING_CLIFF = 12 weeks;    // 3 months vesting cliff for early sponsor
     uint public constant EARLY_CONTRIBUTOR_VESTING_PERIOD = 24 weeks;   // 6 months vesting cliff for early sponsor
 
@@ -89,19 +89,20 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     event onHardCapReached(uint indexed contribPeriodIndex, uint endTime);
     event onCompensated(uint indexed contribPeriodIndex, address indexed contributor, uint amount);
 
+    modifier onlyMultisig() {
+        require(multisigWallet == msg.sender);
+        _;
+    }
+
     function District0xContribution(
-        address[] _owners,          // Addresses allowed to run functions in this contract with "onlymanyowners" modifier
-        uint _required,             // Number of signatures required to run function with "onlymanyowners" modifier
-        address _wallet,
+        address _multisigWallet,
         address _founder1,
         address _founder2,
         address _earlySponsor,
         address[] _advisers
-    )
-        Shareable(_owners, _required)
-    {
+    ) {
         require(_advisers.length == 3);
-        wallet = _wallet;
+        multisigWallet = _multisigWallet;
         founder1 = _founder1;
         founder2 = _founder2;
         earlySponsor = _earlySponsor;
@@ -188,7 +189,7 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
         contribPeriods[periodIndex].contributors[contributor].amount =
             contribPeriods[periodIndex].contributors[contributor].amount.add(contribValue);
 
-        wallet.transfer(contribValue);
+        multisigWallet.transfer(contribValue);
         if (excessContribValue > 0) {
             contributor.transfer(excessContribValue);
         }
@@ -305,12 +306,12 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     }
 
     // @notice Cancels contribution period by destroying tokes reserved for it
-    //  Must be executed by multisignature of many owners
+    //  Must be executed by multisignature
     //  First contribution period can't be canceled
     //  Past contribution period can't be canceled
     // @param periodIndex Contribution period index (1-2)
     function cancelContribPeriod(uint periodIndex)
-        onlymanyowners(sha3(msg.data))
+        onlyMultisig
     {
         require(periodIndex > 0);
         require(periodIndex < contribPeriods.length);
@@ -326,7 +327,7 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     //  Must be executed by multisignature
     // @param periodIndex Contribution period index (0-2)
     function enableContribPeriod(uint8 periodIndex)
-        onlymanyowners(sha3(msg.data))
+        onlyMultisig
     {
         require(periodIndex < contribPeriods.length);
         require(contribPeriods[periodIndex].startTime > now);
@@ -339,7 +340,7 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     // Must be executed by multisignature
     // @param periodIndex Contribution period index (0-2)
     function disableContribPeriod(uint8 periodIndex)
-        onlymanyowners(sha3(msg.data))
+        onlyMultisig
     {
         require(contribPeriods[periodIndex].isEnabled);
         require(getRunningContribPeriod() == CONTRIB_PERIODS);
@@ -406,7 +407,7 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     }
 
     // @notice Kill method should not really be needed, but just in case
-    function kill(address _to) onlymanyowners(sha3(msg.data)) external {
+    function kill(address _to) onlyMultisig external {
         suicide(_to);
     }
 
@@ -465,13 +466,13 @@ contract District0xContribution is Shareable, Pausable, HasNoTokens, TokenContro
     // Used by contribution front-end to obtain contribution contract properties
     function getConfiguration()
         constant
-        returns (bool, uint, address, address, address, address, address[] _advisers, bool)
+        returns (bool, address, address, address, address, address[] _advisers, bool)
     {
         _advisers = new address[](advisers.length);
         for (uint i = 0; i < advisers.length; i++) {
             _advisers[i] = advisers[i];
         }
-        return (stopped, required, wallet, founder1, founder2, earlySponsor, _advisers, tokenTransfersEnabled);
+        return (stopped, multisigWallet, founder1, founder2, earlySponsor, _advisers, tokenTransfersEnabled);
     }
 
     // Used by contribution front-end to obtain contributor's properties

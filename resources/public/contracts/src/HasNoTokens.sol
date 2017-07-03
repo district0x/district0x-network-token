@@ -1,7 +1,7 @@
 pragma solidity ^0.4.11;
 
 import "./ERC20Basic.sol";
-import "./Shareable.sol";
+import "./Ownable.sol";
 
 /**
  * @title Contracts that should not own Tokens
@@ -10,7 +10,7 @@ import "./Shareable.sol";
  * Should tokens (any ERC20Basic compatible) end up in the contract, it allows the
  * owner to reclaim the tokens.
  */
-contract HasNoTokens is Shareable {
+contract HasNoTokens is Ownable {
 
  /**
   * @dev Reject all ERC23 compatible tokens
