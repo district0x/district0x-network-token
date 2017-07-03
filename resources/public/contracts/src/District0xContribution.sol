@@ -57,7 +57,6 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     bool public tokenTransfersEnabled = false;                          // DNT token transfers will be enabled manually
                                                                         // after first contribution period
                                                                         // Can't be disabled back
-
     struct Contributor {
         uint amount;                        // Amount of ETH contributed by an address in given contribution period
         bool isCompensated;                 // Whether this contributor received DNT token for ETH contribution
@@ -65,29 +64,24 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
                                             // but stored for accounting and security purposes
     }
 
-    struct ContribPeriod {
-        uint softCapAmount;                                 // Soft cap of contribution period in wei
-        uint afterSoftCapDuration;                          // Number of seconds to the end of sale from the moment of reaching soft cap (unless reaching hardcap)
-        uint hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
-        uint startTime;                                     // Start time of contribution period in UNIX time
-        uint endTime;                                       // End time of contribution period in UNIX time
-        bool isEnabled;                                     // If contribution period was enabled by multisignature
-        bool isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
-        bool softCapReached;                                // If soft cap was reached
-        bool hardCapReached;                                // If hard cap was reached
-        uint totalContributed;                              // Total amount of ETH contributed in given period
-        address[] contributorsKeys;                         // Addresses of all contributors in given contribution period
-        mapping (address => Contributor) contributors;
-    }
+    uint softCapAmount;                                 // Soft cap of contribution period in wei
+    uint afterSoftCapDuration;                          // Number of seconds to the end of sale from the moment of reaching soft cap (unless reaching hardcap)
+    uint hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
+    uint startTime;                                     // Start time of contribution period in UNIX time
+    uint endTime;                                       // End time of contribution period in UNIX time
+    bool isEnabled;                                     // If contribution period was enabled by multisignature
+    bool isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
+    bool softCapReached;                                // If soft cap was reached
+    bool hardCapReached;                                // If hard cap was reached
+    uint totalContributed;                              // Total amount of ETH contributed in given period
+    address[] contributorsKeys;                         // Addresses of all contributors in given contribution period
+    mapping (address => Contributor) contributors;
 
-    ContribPeriod[] public contribPeriods;
-    uint[] public contribPeriodsStakes;
-
-    event onContribution(uint indexed contribPeriodIndex, uint totalContributed, address indexed contributor, uint amount,
+    event onContribution(uint totalContributed, address indexed contributor, uint amount,
         uint contributorsCount);
-    event onSoftCapReached(uint indexed contribPeriodIndex, uint endTime);
-    event onHardCapReached(uint indexed contribPeriodIndex, uint endTime);
-    event onCompensated(uint indexed contribPeriodIndex, address indexed contributor, uint amount);
+    event onSoftCapReached(uint endTime);
+    event onHardCapReached(uint endTime);
+    event onCompensated(address indexed contributor, uint amount);
 
     modifier onlyMultisig() {
         require(multisigWallet == msg.sender);
@@ -107,26 +101,15 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         founder2 = _founder2;
         earlySponsor = _earlySponsor;
         advisers = _advisers;
-        contribPeriodsStakes = new uint[](CONTRIB_PERIODS);
-        contribPeriodsStakes[0] = CONTRIB_PERIOD1_STAKE;
-        contribPeriodsStakes[1] = CONTRIB_PERIOD2_STAKE;
-        contribPeriodsStakes[2] = CONTRIB_PERIOD3_STAKE;
     }
-
+    
     // @notice Returns index of currently running contribution period
     //  If there's none, returns index 3 (non-existing)
-    function getRunningContribPeriod() constant returns (uint) {
-        for (uint i = 0; i < contribPeriods.length; i++) {
-            ContribPeriod contribPeriod = contribPeriods[i];
-            if (!contribPeriod.hardCapReached &&
-                contribPeriod.isEnabled &&
-                !contribPeriod.isCancelled &&
-                contribPeriod.startTime <= now &&
-                contribPeriod.endTime > now) {
-                    return i;
-                }
-        }
-        return CONTRIB_PERIODS;
+    function isContribPeriodRunning() constant returns (bool) {
+        return !hardCapReached &&
+               isEnabled &&
+               startTime <= now &&
+               endTime > now;
     }
 
     function contribute()
@@ -147,54 +130,51 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     {
         require(tx.gasprice <= maxGasPrice);
         require(msg.value >= minContribAmount);
+        require(isContribPeriodRunning());
 
-        uint periodIndex = getRunningContribPeriod();
-        require(periodIndex < contribPeriods.length);
         uint contribValue = msg.value;
         uint excessContribValue = 0;
 
-        uint oldTotalContributed = contribPeriods[periodIndex].totalContributed;
+        uint oldTotalContributed = totalContributed;
 
-        contribPeriods[periodIndex].totalContributed = oldTotalContributed.add(contribValue);
+        totalContributed = oldTotalContributed.add(contribValue);
 
-        uint newTotalContributed = contribPeriods[periodIndex].totalContributed;
+        uint newTotalContributed = totalContributed;
 
         // Soft cap was reached
-        if (newTotalContributed >= contribPeriods[periodIndex].softCapAmount &&
-            oldTotalContributed < contribPeriods[periodIndex].softCapAmount)
+        if (newTotalContributed >= softCapAmount &&
+            oldTotalContributed < softCapAmount)
         {
-            contribPeriods[periodIndex].softCapReached = true;
-            contribPeriods[periodIndex].endTime = contribPeriods[periodIndex].afterSoftCapDuration.add(now);
-            onSoftCapReached(periodIndex, contribPeriods[periodIndex].endTime);
+            softCapReached = true;
+            endTime = afterSoftCapDuration.add(now);
+            onSoftCapReached(endTime);
         }
         // Hard cap was reached
-        if (newTotalContributed >= contribPeriods[periodIndex].hardCapAmount &&
-            oldTotalContributed < contribPeriods[periodIndex].hardCapAmount)
+        if (newTotalContributed >= hardCapAmount &&
+            oldTotalContributed < hardCapAmount)
         {
-            contribPeriods[periodIndex].hardCapReached = true;
-            contribPeriods[periodIndex].endTime = now;
-            onHardCapReached(periodIndex, contribPeriods[periodIndex].endTime);
+            hardCapReached = true;
+            endTime = now;
+            onHardCapReached(endTime);
 
             // Everything above hard cap will be sent back to contributor
-            excessContribValue = newTotalContributed.sub(contribPeriods[periodIndex].hardCapAmount);
+            excessContribValue = newTotalContributed.sub(hardCapAmount);
             contribValue = contribValue.sub(excessContribValue);
 
-            contribPeriods[periodIndex].totalContributed = contribPeriods[periodIndex].hardCapAmount;
+            totalContributed = hardCapAmount;
         }
 
-        if (contribPeriods[periodIndex].contributors[contributor].amount == 0) {
-            contribPeriods[periodIndex].contributorsKeys.push(contributor);
+        if (contributors[contributor].amount == 0) {
+            contributorsKeys.push(contributor);
         }
 
-        contribPeriods[periodIndex].contributors[contributor].amount =
-            contribPeriods[periodIndex].contributors[contributor].amount.add(contribValue);
+        contributors[contributor].amount = contributors[contributor].amount.add(contribValue);
 
         multisigWallet.transfer(contribValue);
         if (excessContribValue > 0) {
             contributor.transfer(excessContribValue);
         }
-        onContribution(periodIndex, newTotalContributed, contributor, contribValue,
-                    contribPeriods[periodIndex].contributorsKeys.length);
+        onContribution(newTotalContributed, contributor, contribValue, contributorsKeys.length);
     }
 
     // @notice This method is called by owner after contribution period ends, to distribute DNT in proportional manner
@@ -204,35 +184,29 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // @param periodIndex Index of contribution period (0-2)
     // @param offset Number of first contributors to skip.
     // @param limit Max number of contributors compensated on this call
-    function compensateContributors(uint periodIndex, uint offset, uint limit) {
-        require(contribPeriods[periodIndex].isEnabled);
-        require(!contribPeriods[periodIndex].isCancelled);
-        require(contribPeriods[periodIndex].endTime < now);
+    function compensateContributors(uint offset, uint limit) {
+        require(isEnabled);
+        require(endTime < now);
 
         uint i = offset;
         uint compensatedCount = 0;
-        address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
         uint contributorsCount = contributorsKeys.length;
 
-        ContribPeriod contribPeriod = contribPeriods[periodIndex];
-        uint ratio = contribPeriodsStakes[periodIndex]
+        uint ratio = CONTRIB_PERIOD1_STAKE
             .mul(1000000000000000000)
-            .div(contribPeriods[periodIndex].totalContributed);
+            .div(totalContributed);
 
         while (i < contributorsCount && compensatedCount < limit) {
             address contributorAddress = contributorsKeys[i];
-            if (!contribPeriod.contributors[contributorAddress].isCompensated) {
-                uint amountContributed = contribPeriod.contributors[contributorAddress].amount;
-                contribPeriod.contributors[contributorAddress].isCompensated = true;
+            if (!contributors[contributorAddress].isCompensated) {
+                uint amountContributed = contributors[contributorAddress].amount;
+                contributors[contributorAddress].isCompensated = true;
 
-                contribPeriod.contributors[contributorAddress].amountCompensated =
+                contributors[contributorAddress].amountCompensated =
                     amountContributed.mul(ratio).div(1000000000000000000);
 
-                district0xNetworkToken.transfer(contributorAddress,
-                    contribPeriod.contributors[contributorAddress].amountCompensated);
-
-                onCompensated(periodIndex, contributorAddress,
-                    contribPeriod.contributors[contributorAddress].amountCompensated);
+                district0xNetworkToken.transfer(contributorAddress, contributors[contributorAddress].amountCompensated);
+                onCompensated(contributorAddress, contributors[contributorAddress].amountCompensated);
 
                 compensatedCount++;
             }
@@ -251,102 +225,59 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // @param startTime Contribution start time in UNIX time
     // @param endTime Contribution end time in UNIX time
     function setContribPeriod(
-        uint8 i,
-        uint softCapAmount,
-        uint afterSoftCapDuration,
-        uint hardCapAmount,
-        uint startTime,
-        uint endTime
+        uint _softCapAmount,
+        uint _afterSoftCapDuration,
+        uint _hardCapAmount,
+        uint _startTime,
+        uint _endTime
     )
         onlyOwner
     {
-        require(i < CONTRIB_PERIODS);
-        require(softCapAmount > 0);
-        require(hardCapAmount > softCapAmount);
-        require(afterSoftCapDuration > 0);
-        require(startTime > now);
-        require(endTime > startTime);
+        require(_softCapAmount > 0);
+        require(_hardCapAmount > _softCapAmount);
+        require(_afterSoftCapDuration > 0);
+        require(_startTime > now);
+        require(_endTime > _startTime);
+        require(!isEnabled);
 
-        if (i == 0) {
-            district0xNetworkToken.revokeAllTokenGrants(founder1);
-            district0xNetworkToken.revokeAllTokenGrants(founder2);
-            district0xNetworkToken.revokeAllTokenGrants(earlySponsor);
+        softCapAmount = _softCapAmount;
+        afterSoftCapDuration = _afterSoftCapDuration;
+        hardCapAmount = _hardCapAmount;
+        startTime = _startTime;
+        endTime = _endTime;
 
-            for (uint j = 0; j < advisers.length; j++) {
-                district0xNetworkToken.revokeAllTokenGrants(advisers[j]);
-            }
+        district0xNetworkToken.revokeAllTokenGrants(founder1);
+        district0xNetworkToken.revokeAllTokenGrants(founder2);
+        district0xNetworkToken.revokeAllTokenGrants(earlySponsor);
 
-            uint64 vestingDate = uint64(startTime.add(TEAM_VESTING_PERIOD));
-            uint64 cliffDate = uint64(startTime.add(TEAM_VESTING_CLIFF));
-            uint64 earlyContribVestingDate = uint64(startTime.add(EARLY_CONTRIBUTOR_VESTING_PERIOD));
-            uint64 earlyContribCliffDate = uint64(startTime.add(EARLY_CONTRIBUTOR_VESTING_CLIFF));
-            uint64 startDate = uint64(startTime);
-
-            district0xNetworkToken.grantVestedTokens(founder1, FOUNDER1_STAKE, startDate, cliffDate, vestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(founder2, FOUNDER2_STAKE, startDate, cliffDate, vestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(earlySponsor, EARLY_CONTRIBUTOR_STAKE, startDate, earlyContribCliffDate, earlyContribVestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(advisers[0], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
-            district0xNetworkToken.grantVestedTokens(advisers[1], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
-
-            // Community advisors stake has no vesting, but we set it up this way, so we can revoke it in case of
-            // re-setting up contribution period
-            district0xNetworkToken.grantVestedTokens(advisers[2], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
+        for (uint j = 0; j < advisers.length; j++) {
+            district0xNetworkToken.revokeAllTokenGrants(advisers[j]);
         }
 
-        address[] memory contributorsKeys;
-        ContribPeriod memory contribPeriod = ContribPeriod(softCapAmount, afterSoftCapDuration, hardCapAmount,
-            startTime, endTime, false, false, false, false, 0, contributorsKeys);
-        if (i < contribPeriods.length) {
-            require(!contribPeriods[i].isEnabled);
-            require(contribPeriods[i].startTime > now);
-            contribPeriods[i] = contribPeriod;
-        } else {
-            contribPeriods.push(contribPeriod);
-        }
-    }
+        uint64 vestingDate = uint64(startTime.add(TEAM_VESTING_PERIOD));
+        uint64 cliffDate = uint64(startTime.add(TEAM_VESTING_CLIFF));
+        uint64 earlyContribVestingDate = uint64(startTime.add(EARLY_CONTRIBUTOR_VESTING_PERIOD));
+        uint64 earlyContribCliffDate = uint64(startTime.add(EARLY_CONTRIBUTOR_VESTING_CLIFF));
+        uint64 startDate = uint64(startTime);
 
-    // @notice Cancels contribution period by destroying tokes reserved for it
-    //  Must be executed by multisignature
-    //  First contribution period can't be canceled
-    //  Past contribution period can't be canceled
-    // @param periodIndex Contribution period index (1-2)
-    function cancelContribPeriod(uint periodIndex)
-        onlyMultisig
-    {
-        require(periodIndex > 0);
-        require(periodIndex < contribPeriods.length);
-        ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
-        require(contribPeriod.startTime > now);
-        require(contribPeriod.endTime > now);
-        require(!contribPeriod.isCancelled);
-        contribPeriods[periodIndex].isCancelled = true;
-        district0xNetworkToken.destroyTokens(this, contribPeriodsStakes[periodIndex]);
+        district0xNetworkToken.grantVestedTokens(founder1, FOUNDER1_STAKE, startDate, cliffDate, vestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(founder2, FOUNDER2_STAKE, startDate, cliffDate, vestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(earlySponsor, EARLY_CONTRIBUTOR_STAKE, startDate, earlyContribCliffDate, earlyContribVestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(advisers[0], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(advisers[1], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
+
+        // Community advisors stake has no vesting, but we set it up this way, so we can revoke it in case of
+        // re-setting up contribution period
+        district0xNetworkToken.grantVestedTokens(advisers[2], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
     }
 
     // @notice Enables contribution period
     //  Must be executed by multisignature
-    // @param periodIndex Contribution period index (0-2)
-    function enableContribPeriod(uint8 periodIndex)
+    function enableContribPeriod()
         onlyMultisig
     {
-        require(periodIndex < contribPeriods.length);
-        require(contribPeriods[periodIndex].startTime > now);
-        require(!contribPeriods[periodIndex].isCancelled);
-        contribPeriods[periodIndex].isEnabled = true;
-    }
-
-    // @notice Disables back contribution period
-    // To be used only in case of unexpected change of plans
-    // Must be executed by multisignature
-    // @param periodIndex Contribution period index (0-2)
-    function disableContribPeriod(uint8 periodIndex)
-        onlyMultisig
-    {
-        require(contribPeriods[periodIndex].isEnabled);
-        require(getRunningContribPeriod() == CONTRIB_PERIODS);
-        require(contribPeriods[periodIndex].startTime > now);
-        require(!contribPeriods[periodIndex].isCancelled);
-        contribPeriods[periodIndex].isEnabled = false;
+        require(startTime > now);
+        isEnabled = true;
     }
 
     // @notice Sets new min. contribution amount
@@ -357,7 +288,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         onlyOwner
     {
         require(_minContribAmount > 0);
-        require(getRunningContribPeriod() == CONTRIB_PERIODS);
+        require(startTime > now);
         minContribAmount = _minContribAmount;
     }
 
@@ -369,7 +300,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         onlyOwner
     {
         require(_maxGasPrice > 0);
-        require(getRunningContribPeriod() == CONTRIB_PERIODS);
+        require(startTime > now);
         maxGasPrice = _maxGasPrice;
     }
 
@@ -381,7 +312,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         onlyOwner
     {
         require(_district0xNetworkToken != 0x0);
-        require(contribPeriods.length == 0);
+        require(!isEnabled);
         district0xNetworkToken = District0xNetworkToken(_district0xNetworkToken);
         if (district0xNetworkToken.totalSupply() == 0) {
             district0xNetworkToken.generateTokens(this, FOUNDER1_STAKE
@@ -389,8 +320,9 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
                 .add(EARLY_CONTRIBUTOR_STAKE)
                 .add(ADVISER_STAKE.mul(2))
                 .add(COMMUNITY_ADVISERS_STAKE)
-                .add(CONTRIB_PERIOD1_STAKE)
-                .add(CONTRIB_PERIOD2_STAKE)
+                .add(CONTRIB_PERIOD1_STAKE));
+
+            district0xNetworkToken.generateTokens(multisigWallet, CONTRIB_PERIOD2_STAKE
                 .add(CONTRIB_PERIOD3_STAKE));
         }
     }
@@ -400,9 +332,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     function enableDistrict0xNetworkTokenTransfers()
         onlyOwner
     {
-        require(contribPeriods.length > 0);
-        ContribPeriod memory contribPeriod = contribPeriods[0];
-        require(contribPeriod.endTime < now);
+        require(endTime < now);
         tokenTransfersEnabled = true;
     }
 
@@ -439,28 +369,25 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
      */
 
     // Used by contribution front-end to obtain contribution period properties
-    function getContribPeriod(uint periodIndex)
+    function getContribPeriod()
         constant
         returns (bool[4] boolValues, uint[8] uintValues)
     {
-        if (periodIndex < contribPeriods.length) {
-            ContribPeriod memory contribPeriod = contribPeriods[periodIndex];
-            boolValues[0] = contribPeriod.isEnabled;
-            boolValues[1] = contribPeriod.isCancelled;
-            boolValues[2] = contribPeriod.softCapReached;
-            boolValues[3] = contribPeriod.hardCapReached;
+        boolValues[0] = isEnabled;
+        boolValues[1] = isCancelled;
+        boolValues[2] = softCapReached;
+        boolValues[3] = hardCapReached;
 
-            uintValues[0] = contribPeriod.softCapAmount;
-            uintValues[1] = contribPeriod.afterSoftCapDuration;
-            uintValues[2] = contribPeriod.hardCapAmount;
-            uintValues[3] = contribPeriod.startTime;
-            uintValues[4] = contribPeriod.endTime;
-            uintValues[5] = contribPeriod.totalContributed;
-            uintValues[6] = contribPeriod.contributorsKeys.length;
-            uintValues[7] = contribPeriodsStakes[periodIndex];
+        uintValues[0] = softCapAmount;
+        uintValues[1] = afterSoftCapDuration;
+        uintValues[2] = hardCapAmount;
+        uintValues[3] = startTime;
+        uintValues[4] = endTime;
+        uintValues[5] = totalContributed;
+        uintValues[6] = contributorsKeys.length;
+        uintValues[7] = CONTRIB_PERIOD1_STAKE;
 
-            return (boolValues, uintValues);
-        }
+        return (boolValues, uintValues);
     }
 
     // Used by contribution front-end to obtain contribution contract properties
@@ -476,20 +403,20 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     }
 
     // Used by contribution front-end to obtain contributor's properties
-    function getContributor(uint periodIndex, address contributorAddress)
+    function getContributor(address contributorAddress)
         constant
         returns(uint, bool, uint)
     {
-        Contributor contributor = contribPeriods[periodIndex].contributors[contributorAddress];
+        Contributor contributor = contributors[contributorAddress];
         return (contributor.amount, contributor.isCompensated, contributor.amountCompensated);
     }
 
     // Function to verify if all contributors were compensated
-    function getUncompensatedContributors(uint periodIndex, uint offset, uint limit)
+    function getUncompensatedContributors(uint offset, uint limit)
         constant
         returns (uint[] contributorIndexes)
     {
-        uint contributorsCount = contribPeriods[periodIndex].contributorsKeys.length;
+        uint contributorsCount = contributorsKeys.length;
 
         if (limit == 0) {
             limit = contributorsCount;
@@ -498,11 +425,9 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         uint i = offset;
         uint resultsCount = 0;
         uint[] memory _contributorIndexes = new uint[](limit);
-        address[] contributorsKeys = contribPeriods[periodIndex].contributorsKeys;
-        ContribPeriod contribPeriod = contribPeriods[periodIndex];
 
         while (i < contributorsCount && resultsCount < limit) {
-            if (!contribPeriod.contributors[contributorsKeys[i]].isCompensated) {
+            if (!contributors[contributorsKeys[i]].isCompensated) {
                 _contributorIndexes[resultsCount] = i;
                 resultsCount++;
             }
