@@ -60,7 +60,6 @@
 (def ^:dynamic DNTToken nil)
 
 (def owner1 (nth accounts 0))
-(def owner2 (nth accounts 1))
 (def wallet (nth accounts 9))
 (def founder1 (nth accounts 2))
 (def founder2 (nth accounts 3))
@@ -73,15 +72,10 @@
   (contract-call-ch (chan 1 (map wei->eth->num)) DNTToken :balance-of address))
 
 (defn- contrib-period-running? []
-  (let [ch (chan)
-        ch1 (contract-call-ch Contribution :CONTRIB_PERIODS)
-        ch2 (contract-call-ch Contribution :get-running-contrib-period)]
-    (go
-      (>! ch (not (bn/eq? (<! ch1) (<! ch2)))))
-    ch))
+  (contract-call-ch Contribution :is-contrib-period-running))
 
-(defn get-contrib-period [period-index]
-  (contract-call-ch (chan 1 (map parse-get-contrib-period)) Contribution :get-contrib-period period-index))
+(defn get-contrib-period []
+  (contract-call-ch (chan 1 (map parse-get-contrib-period)) Contribution :get-contrib-period))
 
 
 (defn deploy-contracts! [done]
@@ -113,7 +107,7 @@
          :bin (fetch-bin "District0xContribution")
          :res-ch contrib-ch
          :gas 4500000
-         :args [[owner1 owner2] 2 wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})
+         :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})
 
       (set! Contribution (<! contrib-ch))
 
@@ -152,317 +146,280 @@
       (is (= (aget DNTToken "address") (<! (contract-call-ch Contribution :district0x-network-token))))
       (is (= (aget Contribution "address") (<! (contract-call-ch DNTToken :controller))))
       (is (= (aget MiniMeTokenFactory "address") (<! (contract-call-ch DNTToken :token-factory))))
-      (is (= wallet (<! (contract-call-ch Contribution :wallet))))
+      (is (= wallet (<! (contract-call-ch Contribution :multisig-wallet))))
       (is (= founder1 (<! (contract-call-ch Contribution :founder1))))
       (is (= founder2 (<! (contract-call-ch Contribution :founder2))))
       (is (= early-sponsor (<! (contract-call-ch Contribution :early-sponsor))))
       (is (= adviser1 (<! (contract-call-ch Contribution :advisers 0))))
       (is (= adviser2 (<! (contract-call-ch Contribution :advisers 1))))
       (is (= community-advisors (<! (contract-call-ch Contribution :advisers 2))))
-      (is (= owner1 (<! (contract-call-ch Contribution :get-owner 1))))
-      (is (= owner2 (<! (contract-call-ch Contribution :get-owner 2))))
       (is (= 1000000000 (wei->eth->num (<! (contract-call-ch DNTToken :total-supply)))))
       (is (not (<! (contract-call-ch Contribution :token-transfers-enabled))))
       (is (= 0 (<! (get-dnt-balance founder1))))
       (is (= 0 (<! (get-dnt-balance founder2))))
-      (is (= 0 (<! (get-dnt-balance wallet))))
+      (is (= 180000000 (<! (get-dnt-balance wallet))))
       (is (= 0 (<! (get-dnt-balance early-sponsor))))
       (is (= 0 (<! (get-dnt-balance adviser1))))
       (is (= 0 (<! (get-dnt-balance adviser2))))
       (is (= 0 (<! (get-dnt-balance community-advisors))))
-      (is (= 1000000000 (<! (get-dnt-balance (aget Contribution "address")))))
+      (is (= 820000000 (<! (get-dnt-balance (aget Contribution "address")))))
       (done))))
 
 (deftest contribution1
   (async done
-    (let [contrib-period1 (chan)
-          contrib-period2 (chan)]
-      (go
-        (go
-          (testing "Shouldn't be able to contribute when contribution period is not running"
-            (is (u/error? (<! (state-call-ch! Contribution :contribute {:from (nth accounts 10)
-                                                                        :value-ether 1})))))
+    (go
+      (testing "Shouldn't be able to contribute when contribution period is not running"
+        (is (u/error? (<! (state-call-ch! Contribution :contribute {:from (nth accounts 10)
+                                                                    :value-ether 1})))))
 
-          (let [soft-cap-amount (eth->wei->num 10)
-                after-soft-cap-duration (time/in-seconds (time/hours 48))
-                hard-cap-amount (eth->wei->num 15)
-                start-time-seconds 60
-                end-time-seconds 120
-                start-time (now-plus-seconds start-time-seconds)
-                end-time (now-plus-seconds end-time-seconds)]
+      (let [soft-cap-amount (eth->wei->num 10)
+            after-soft-cap-duration (time/in-seconds (time/hours 48))
+            hard-cap-amount (eth->wei->num 15)
+            start-time-seconds 60
+            end-time-seconds 120
+            start-time (now-plus-seconds start-time-seconds)
+            end-time (now-plus-seconds end-time-seconds)]
 
 
-            (testing "Should be able to set contribution period"
-              (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                     {:from owner1
-                                                      :args (contrib-period-args
-                                                              {:contribution/period-index 0
-                                                               :contrib-period/soft-cap-amount soft-cap-amount
-                                                               :contrib-period/after-soft-cap-duration after-soft-cap-duration
-                                                               :contrib-period/hard-cap-amount hard-cap-amount
-                                                               :contrib-period/start-time start-time
-                                                               :contrib-period/end-time end-time})}))))
+        (testing "Should be able to set contribution period"
+          (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
+                                                 {:from owner1
+                                                  :args (contrib-period-args
+                                                          {:contrib-period/soft-cap-amount soft-cap-amount
+                                                           :contrib-period/after-soft-cap-duration after-soft-cap-duration
+                                                           :contrib-period/hard-cap-amount hard-cap-amount
+                                                           :contrib-period/start-time start-time
+                                                           :contrib-period/end-time end-time})}))))
 
-              (let [contrib-period (<! (get-contrib-period 0))]
-                (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
-                (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
-                (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
-                (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
-                (is (= false (:contrib-period/enabled? contrib-period)))
-                (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
-                (is (zero? (:contrib-period/total-contributed contrib-period)))
-                (is (zero? (:contrib-period/contributors-count contrib-period))))
+          (let [contrib-period (<! (get-contrib-period))]
+            (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+            (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
+            (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
+            (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
+            (is (= false (:contrib-period/enabled? contrib-period)))
+            (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+            (is (zero? (:contrib-period/total-contributed contrib-period)))
+            (is (zero? (:contrib-period/contributors-count contrib-period))))
 
-              (is (= 120000000 (<! (get-dnt-balance founder1))))
-              (is (= 80000000 (<! (get-dnt-balance founder2))))
-              (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
-              (is (= 5000000 (<! (get-dnt-balance adviser1))))
-              (is (= 5000000 (<! (get-dnt-balance adviser2))))
-              (is (= 5000000 (<! (get-dnt-balance community-advisors))))
-              (is (= 780000000 (<! (get-dnt-balance (aget Contribution "address")))))
+          (is (= 120000000 (<! (get-dnt-balance founder1))))
+          (is (= 80000000 (<! (get-dnt-balance founder2))))
+          (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
+          (is (= 5000000 (<! (get-dnt-balance adviser1))))
+          (is (= 5000000 (<! (get-dnt-balance adviser2))))
+          (is (= 5000000 (<! (get-dnt-balance community-advisors))))
+          (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address")))))
 
-              (testing "Token grants are setup okay"
-                (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 community-advisors]]
-                  (is (bn/eq? (<! (contract-call-ch DNTToken :token-grants-count founder1)) 1))
-                  (let [[granter amount vested-amount start-date cliff-date vesting-date]
-                        (<! (contract-call-ch DNTToken :token-grant founder1 0))]
-                    (is (= granter (aget Contribution "address")))
-                    (bn/eq? vested-amount 0))))
+          (testing "Token grants are setup okay"
+            (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 community-advisors]]
+              (is (bn/eq? (<! (contract-call-ch DNTToken :token-grants-count founder1)) 1))
+              (let [[granter amount vested-amount start-date cliff-date vesting-date]
+                    (<! (contract-call-ch DNTToken :token-grant founder1 0))]
+                (is (= granter (aget Contribution "address")))
+                (bn/eq? vested-amount 0))))
 
-              (testing "Setting first contrib period again will keep correct dnt balances"
-                (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                       {:from owner1
-                                                        :args (contrib-period-args
-                                                                {:contribution/period-index 0
-                                                                 :contrib-period/soft-cap-amount soft-cap-amount
-                                                                 :contrib-period/after-soft-cap-duration after-soft-cap-duration
-                                                                 :contrib-period/hard-cap-amount hard-cap-amount
-                                                                 :contrib-period/start-time start-time
-                                                                 :contrib-period/end-time end-time})}))))
+          (testing "Setting first contrib period again will keep correct dnt balances"
+            (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
+                                                   {:from owner1
+                                                    :args (contrib-period-args
+                                                            {:contrib-period/soft-cap-amount soft-cap-amount
+                                                             :contrib-period/after-soft-cap-duration after-soft-cap-duration
+                                                             :contrib-period/hard-cap-amount hard-cap-amount
+                                                             :contrib-period/start-time start-time
+                                                             :contrib-period/end-time end-time})}))))
 
-                (let [contrib-period (<! (get-contrib-period 0))]
-                  (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
-                  (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
-                  (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
-                  (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
-                  (is (= false (:contrib-period/enabled? contrib-period)))
-                  (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
-                  (is (zero? (:contrib-period/total-contributed contrib-period)))
-                  (is (zero? (:contrib-period/contributors-count contrib-period))))
+            (let [contrib-period (<! (get-contrib-period))]
+              (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+              (is (= after-soft-cap-duration (:contrib-period/after-soft-cap-duration contrib-period)))
+              (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
+              (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
+              (is (= false (:contrib-period/enabled? contrib-period)))
+              (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+              (is (zero? (:contrib-period/total-contributed contrib-period)))
+              (is (zero? (:contrib-period/contributors-count contrib-period))))
 
-                (is (= 120000000 (<! (get-dnt-balance founder1))))
-                (is (= 80000000 (<! (get-dnt-balance founder2))))
-                (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
-                (is (= 5000000 (<! (get-dnt-balance adviser1))))
-                (is (= 5000000 (<! (get-dnt-balance adviser2))))
-                (is (= 5000000 (<! (get-dnt-balance community-advisors))))
-                (is (= 780000000 (<! (get-dnt-balance (aget Contribution "address"))))))
+            (is (= 120000000 (<! (get-dnt-balance founder1))))
+            (is (= 80000000 (<! (get-dnt-balance founder2))))
+            (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
+            (is (= 5000000 (<! (get-dnt-balance adviser1))))
+            (is (= 5000000 (<! (get-dnt-balance adviser2))))
+            (is (= 5000000 (<! (get-dnt-balance community-advisors))))
+            (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address"))))))
 
-              (testing "Only one owner shouldn't be able to enable contribution period"
-                (<! (state-call-ch! Contribution :enable-contrib-period {:from owner1 :args [0]}))
-                (is (= false (:contrib-period/enabled? (<! (get-contrib-period 0))))))
+          (testing "Only one owner shouldn't be able to enable contribution period"
+            (<! (state-call-ch! Contribution :enable-contrib-period {:from owner1}))
+            (is (= false (:contrib-period/enabled? (<! (get-contrib-period))))))
 
-              (testing "Confirmation of another owner should enable contribution period"
-                (<! (state-call-ch! Contribution :enable-contrib-period {:from owner2 :args [0]}))
-                (is (= true (:contrib-period/enabled? (<! (get-contrib-period 0))))))
+          (testing "Confirmation from multisig wallet should enable contribution period"
+            (<! (state-call-ch! Contribution :enable-contrib-period {:from wallet}))
+            (is (= true (:contrib-period/enabled? (<! (get-contrib-period))))))
 
-              (testing "Shouldn't be able to contribute before contribution start time"
-                (is (u/error? (<! (state-call-ch! Contribution :contribute {:from owner1 :value-ether 1})))))
+          (testing "Shouldn't be able to contribute before contribution start time"
+            (is (u/error? (<! (state-call-ch! Contribution :contribute {:from owner1 :value-ether 1})))))
 
-              (testing "Contrib period 1 is running"
-                (is (false? (<! (contrib-period-running?)))))
+          (testing "Contrib period 1 is running"
+            (is (false? (<! (contrib-period-running?)))))
 
-              (<! (increase-time-and-mine-ch! web3 start-time-seconds))
+          (<! (increase-time-and-mine-ch! web3 start-time-seconds))
 
-              (testing "Contrib period 1 is running"
-                (is (true? (<! (contrib-period-running?)))))
+          (testing "Contrib period 1 is running"
+            (is (true? (<! (contrib-period-running?)))))
 
-              (testing "Contribution round 1"
-                (let [wallet-balance-before (<! (get-balance-ch web3 wallet))
-                      contributions [[(nth accounts 10) 1]
-                                     [(nth accounts 11) 1.5]
-                                     [(nth accounts 12) 2]
-                                     [(nth accounts 13) 2.5]]
-                      contributors (mapv first contributions)
-                      contribs-total (->> contributions
-                                       (map second)
-                                       (reduce + 0)
-                                       eth->wei->num)
-                      expected-dnt-balances [(web3/to-big-number "85714285714285714285714285")
-                                             (web3/to-big-number "128571428571428571428571427")
-                                             (web3/to-big-number "171428571428571428571428570")
-                                             (web3/to-big-number "214285714285714285714285712")]
-                      dnt-compensated-total (reduce bn/+ (web3/to-big-number 0) expected-dnt-balances)]
-
-                  (testing "Users should be able to contribute"
-                    (doseq [[contributor amount] contributions]
-                      (is (u/tx-address? (<! (state-call-ch! Contribution :contribute
-                                                             {:from contributor
-                                                              :value-ether amount})))))
-                    (is (bn/eq? (bn/+ wallet-balance-before contribs-total) (<! (get-balance-ch web3 wallet))))
-
-                    (<! (mine-ch! web3))
-
-                    (doseq [[contributor amount] contributions]
-                      (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor 0 contributor))]
-                        (is (= (wei->eth->num contrib-amount) amount))
-                        (is (false? compensated?))))
-
-                    (let [contrib-period (<! (get-contrib-period 0))]
-                      (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
-                      (is (= (wei->eth->num contribs-total) (:contrib-period/total-contributed contrib-period)))
-                      (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
-
-                  (testing "Shouldn't be able to compensate when contrib period is still running"
-                    (is (u/error? (<! (state-call-ch! Contribution :compensate-contributors
-                                                      {:from owner1
-                                                       :args [0 0 10]})))))
-
-                  (<! (increase-time-and-mine-ch! web3 (- end-time-seconds start-time-seconds)))
-
-                  (testing "Contributors should be compensated with dnt tokens after contrib period ended"
-                    (state-call-ch! Contribution :compensate-contributors {:from owner1
-                                                                           :args [0 0 10]})
-
-                    (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
-                      (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor)))))
-                    (is (= 600000000 (wei->eth->num dnt-compensated-total))))))))
-          (>! contrib-period1 true))
-
-        (<! contrib-period1)
-
-        (go
-          (testing "Contribution round 2"
+          (testing "Contribution round 1"
             (let [wallet-balance-before (<! (get-balance-ch web3 wallet))
-                  soft-cap-amount (eth->wei->num 3)
-                  hard-cap-amount (eth->wei->num 6)
-                  start-time-seconds 300
-                  after-soft-cap-seconds 200
-                  start-time (now-plus-seconds start-time-seconds)
-                  end-time (now-plus-seconds 10000)
-                  contributions [[(nth accounts 10) 2] [(nth accounts 14) 2]]
+                  contributions [[(nth accounts 10) 1]
+                                 [(nth accounts 11) 1.5]
+                                 [(nth accounts 12) 2]
+                                 [(nth accounts 13) 2.5]]
                   contributors (mapv first contributions)
                   contribs-total (->> contributions
                                    (map second)
                                    (reduce + 0)
                                    eth->wei->num)
-                  expected-dnt-balances [(bn/+ (<! (contract-call-ch DNTToken :balance-of (first contributors)))
-                                               (web3/to-big-number "70000000000000000000000000"))
-                                         (web3/to-big-number "70000000000000000000000000")]
+                  expected-dnt-balances [(web3/to-big-number "85714285714285714285714285")
+                                         (web3/to-big-number "128571428571428571428571427")
+                                         (web3/to-big-number "171428571428571428571428570")
+                                         (web3/to-big-number "214285714285714285714285712")]
                   dnt-compensated-total (reduce bn/+ (web3/to-big-number 0) expected-dnt-balances)]
 
-              (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                     {:from owner1
-                                                      :args (contrib-period-args
-                                                              {:contribution/period-index 1
-                                                               :contrib-period/soft-cap-amount soft-cap-amount
-                                                               :contrib-period/after-soft-cap-duration after-soft-cap-seconds
-                                                               :contrib-period/hard-cap-amount hard-cap-amount
-                                                               :contrib-period/start-time start-time
-                                                               :contrib-period/end-time end-time})}))))
-
-              (let [contrib-period (<! (get-contrib-period 1))]
-                (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
-                (is (= after-soft-cap-seconds (:contrib-period/after-soft-cap-duration contrib-period)))
-                (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
-                (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
-                (is (= false (:contrib-period/enabled? contrib-period)))
-                (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
-                (is (zero? (:contrib-period/total-contributed contrib-period)))
-                (is (zero? (:contrib-period/contributors-count contrib-period))))
-
-              (is (u/tx-address? (<! (state-call-ch! Contribution :enable-contrib-period {:from owner1
-                                                                                          :args [1]}))))
-              (is (u/tx-address? (<! (state-call-ch! Contribution :enable-contrib-period {:from owner2
-                                                                                          :args [1]}))))
-
-              (<! (increase-time-and-mine-ch! web3 start-time-seconds))
-
-              (is (true? (<! (contrib-period-running?))))
-
-              (testing "Users should be able to contribute and hit soft cap"
+              (testing "Users should be able to contribute"
                 (doseq [[contributor amount] contributions]
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :contribute {:from contributor
-                                                                                   :value-ether amount})))))
+                  (is (u/tx-address? (<! (state-call-ch! Contribution :contribute
+                                                         {:from contributor
+                                                          :value-ether amount})))))
                 (is (bn/eq? (bn/+ wallet-balance-before contribs-total) (<! (get-balance-ch web3 wallet))))
 
                 (<! (mine-ch! web3))
 
                 (doseq [[contributor amount] contributions]
-                  (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor 1 contributor))]
+                  (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor contributor))]
                     (is (= (wei->eth->num contrib-amount) amount))
                     (is (false? compensated?))))
 
-                (testing "Hitting soft cap should change contrib period end time"
-                  (let [contrib-period (<! (get-contrib-period 1))]
-                    (is (< (to-epoch (:contrib-period/end-time contrib-period))
-                           end-time))
-                    (is (= true (:contrib-period/soft-cap-reached? contrib-period)))
-                    (is (= (wei->eth->num contribs-total) (:contrib-period/total-contributed contrib-period)))
-                    (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
+                (let [contrib-period (<! (get-contrib-period))]
+                  (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+                  (is (= (wei->eth->num contribs-total) (:contrib-period/total-contributed contrib-period)))
+                  (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
 
-                (<! (increase-time-and-mine-ch! web3 (+ after-soft-cap-seconds 3)))
+              (testing "Shouldn't be able to compensate when contrib period is still running"
+                (is (u/error? (<! (state-call-ch! Contribution :compensate-contributors
+                                                  {:from owner1
+                                                   :args [0 10]})))))
 
-                (is (false? (<! (contrib-period-running?))))
+              (<! (increase-time-and-mine-ch! web3 (- end-time-seconds start-time-seconds)))
 
-                (testing "Contributors should be compensated partially (first half) with dnt tokens"
-                  (let [half-count (/ (count contributions) 2)
-                        contributions (take half-count contributions)
-                        expected-dnt-balances (take half-count expected-dnt-balances)
-                        contributors (take half-count contributors)]
-                    (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
-                                                           {:from owner1
-                                                            :args [1 0 half-count]}))))
+              (testing "Contributors should be compensated with dnt tokens after contrib period ended"
+                (state-call-ch! Contribution :compensate-contributors {:from owner1
+                                                                       :args [0 10]})
 
-                    (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
-                      (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor))))))
-
-                  (testing "Some contributors are still not compensated"
-                    (is (bn/eq? (<! (contract-call-ch DNTToken :balance-of (last contributors))) 0))))
-
-                (testing "Contributors should be compensated partially (second half) with dnt tokens"
-                  (let [half-count (/ (count contributions) 2)
-                        contributions (take-last half-count contributions)
-                        expected-dnt-balances (take-last half-count expected-dnt-balances)
-                        contributors (take-last half-count contributors)]
-                    (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
-                                                           {:from owner1
-                                                            :args [1 0 1000]}))))
-
-                    (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
-                      (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor)))))))
-
-                (testing "First contributor wasn't compensated twice"
-                  (is (bn/eq? (first expected-dnt-balances)
-                              (<! (contract-call-ch DNTToken :balance-of (first contributors))))))
-
-                (testing "Shouldn't be able to cancel ended contrib period"
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :cancel-contrib-period {:from owner1
-                                                                                              :args [1]}))))
-                  (is (u/error? (<! (state-call-ch! Contribution :cancel-contrib-period {:from owner2
-                                                                                         :args [1]})))))
-
-                (testing "Should be able to cancel non started contrib period"
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                         {:from owner1
-                                                          :args (contrib-period-args
-                                                                  {:contribution/period-index 2
-                                                                   :contrib-period/soft-cap-amount (eth->wei->num 3)
-                                                                   :contrib-period/after-soft-cap-duration (time/in-seconds (time/seconds 2))
-                                                                   :contrib-period/hard-cap-amount (eth->wei->num 5)
-                                                                   :contrib-period/start-time (now-plus-seconds 1000)
-                                                                   :contrib-period/end-time (now-plus-seconds 2000)})}))))
-
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :cancel-contrib-period {:from owner1
-                                                                                              :args [2]}))))
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :cancel-contrib-period {:from owner2
-                                                                                              :args [2]}))))
-                  (is (= 960000000 (wei->eth->num (<! (contract-call-ch DNTToken :total-supply)))))))))
-          (>! contrib-period2 true))
-        (<! contrib-period2)
-        (done)))))
+                (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
+                  (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor)))))
+                (is (= 600000000 (wei->eth->num dnt-compensated-total))))))))
+      (done))))
 
 (deftest contribution2
+  (async done
+    (go
+      (let [soft-cap-amount (eth->wei->num 3)
+            hard-cap-amount (eth->wei->num 6)
+            start-time-seconds 300
+            after-soft-cap-seconds 200
+            start-time (now-plus-seconds start-time-seconds)
+            end-time (now-plus-seconds 10000)
+            contributions [[(nth accounts 10) 2] [(nth accounts 14) 2]]
+            contributors (mapv first contributions)
+            contribs-total (->> contributions
+                             (map second)
+                             (reduce + 0)
+                             eth->wei->num)
+            expected-dnt-balances [(bn/+ (<! (contract-call-ch DNTToken :balance-of (first contributors)))
+                                         (web3/to-big-number "300000000000000000000000000"))
+                                   (web3/to-big-number "300000000000000000000000000")]
+            dnt-compensated-total (reduce bn/+ (web3/to-big-number 0) expected-dnt-balances)]
+
+        (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
+                                               {:from owner1
+                                                :args (contrib-period-args
+                                                        {:contrib-period/soft-cap-amount soft-cap-amount
+                                                         :contrib-period/after-soft-cap-duration after-soft-cap-seconds
+                                                         :contrib-period/hard-cap-amount hard-cap-amount
+                                                         :contrib-period/start-time start-time
+                                                         :contrib-period/end-time end-time})}))))
+
+        (let [contrib-period (<! (get-contrib-period))]
+          (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
+          (is (= after-soft-cap-seconds (:contrib-period/after-soft-cap-duration contrib-period)))
+          (is (= start-time (to-epoch (:contrib-period/start-time contrib-period))))
+          (is (= end-time (to-epoch (:contrib-period/end-time contrib-period))))
+          (is (= false (:contrib-period/enabled? contrib-period)))
+          (is (= false (:contrib-period/soft-cap-reached? contrib-period)))
+          (is (zero? (:contrib-period/total-contributed contrib-period)))
+          (is (zero? (:contrib-period/contributors-count contrib-period))))
+
+        (is (u/tx-address? (<! (state-call-ch! Contribution :enable-contrib-period {:from wallet}))))
+
+        (<! (increase-time-and-mine-ch! web3 start-time-seconds))
+
+        (is (true? (<! (contrib-period-running?))))
+
+        (testing "Users should be able to contribute and hit soft cap"
+          (let [wallet-balance-before (<! (get-balance-ch web3 wallet))]
+            (doseq [[contributor amount] contributions]
+              (is (u/tx-address? (<! (state-call-ch! Contribution :contribute {:from contributor
+                                                                               :value-ether amount})))))
+            (is (bn/eq? (bn/+ wallet-balance-before contribs-total) (<! (get-balance-ch web3 wallet)))))
+
+          (<! (mine-ch! web3))
+
+          (doseq [[contributor amount] contributions]
+            (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor contributor))]
+              (is (= (wei->eth->num contrib-amount) amount))
+              (is (false? compensated?))))
+
+          (testing "Hitting soft cap should change contrib period end time"
+            (let [contrib-period (<! (get-contrib-period))]
+              (is (< (to-epoch (:contrib-period/end-time contrib-period))
+                     end-time))
+              (is (= true (:contrib-period/soft-cap-reached? contrib-period)))
+              (is (= (wei->eth->num contribs-total) (:contrib-period/total-contributed contrib-period)))
+              (is (= (count contributors) (:contrib-period/contributors-count contrib-period)))))
+
+          (<! (increase-time-and-mine-ch! web3 (+ after-soft-cap-seconds 3)))
+
+          (is (false? (<! (contrib-period-running?))))
+
+          (testing "Contributors should be compensated partially (first half) with dnt tokens"
+            (let [half-count (/ (count contributions) 2)
+                  contributions (take half-count contributions)
+                  expected-dnt-balances (take half-count expected-dnt-balances)
+                  contributors (take half-count contributors)]
+              (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
+                                                     {:from owner1
+                                                      :args [0 half-count]}))))
+
+              (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
+                (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor))))))
+
+            (testing "Some contributors are still not compensated"
+              (is (bn/eq? (<! (contract-call-ch DNTToken :balance-of (last contributors))) 0))))
+
+          (testing "Contributors should be compensated partially (second half) with dnt tokens"
+            (let [half-count (/ (count contributions) 2)
+                  contributions (take-last half-count contributions)
+                  expected-dnt-balances (take-last half-count expected-dnt-balances)
+                  contributors (take-last half-count contributors)]
+              (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
+                                                     {:from owner1
+                                                      :args [0 1000]}))))
+
+              (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
+                (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor)))))))
+
+          (testing "First contributor wasn't compensated twice"
+            (is (bn/eq? (first expected-dnt-balances)
+                        (<! (contract-call-ch DNTToken :balance-of (first contributors))))))))
+      (done))))
+
+(deftest contribution3
   (async done
     (go
       (let [soft-cap-amount (eth->wei->num 1)
@@ -477,22 +434,15 @@
         (testing "Should be able to set contribution period"
           (state-call-ch! Contribution :set-contrib-period {:from owner1
                                                             :args (contrib-period-args
-                                                                    {:contribution/period-index 0
-                                                                     :contrib-period/soft-cap-amount soft-cap-amount
+                                                                    {:contrib-period/soft-cap-amount soft-cap-amount
                                                                      :contrib-period/after-soft-cap-duration after-soft-cap-duration
                                                                      :contrib-period/hard-cap-amount hard-cap-amount
                                                                      :contrib-period/start-time start-time
                                                                      :contrib-period/end-time end-time})})
 
-          (testing "Only one owner shouldn't be able to enable contribution period"
-            (state-call-ch! Contribution :enable-contrib-period {:from owner1
-                                                                 :args [0]})
-            (is (= false (:contrib-period/enabled? (<! (get-contrib-period 0))))))
+          (state-call-ch! Contribution :enable-contrib-period {:from wallet})
 
-          (testing "Confirmation of another owner should enable contribution period"
-            (state-call-ch! Contribution :enable-contrib-period {:from owner2
-                                                                 :args [0]})
-            (is (= true (:contrib-period/enabled? (<! (get-contrib-period 0))))))
+          (is (true? (:contrib-period/enabled? (<! (get-contrib-period)))))
 
           (<! (increase-time-and-mine-ch! web3 start-time-seconds))
 
@@ -519,7 +469,7 @@
 
                 (<! (mine-ch! web3))
 
-                (let [contrib-period (<! (get-contrib-period 0))]
+                (let [contrib-period (<! (get-contrib-period))]
                   (is (= true (:contrib-period/soft-cap-reached? contrib-period)))
                   (is (= true (:contrib-period/hard-cap-reached? contrib-period)))))
 
@@ -530,7 +480,7 @@
                 (is (bn/eq? (bn/+ wallet-balance-before hard-cap-amount)
                             (<! (get-balance-ch web3 wallet))))
 
-                (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor 0 (nth accounts 11)))]
+                (let [[contrib-amount compensated?] (<! (contract-call-ch Contribution :get-contributor (nth accounts 11)))]
                   (is (= (wei->eth->num contrib-amount) 1))
                   (is (false? compensated?))))
 
@@ -545,7 +495,7 @@
               (testing "Contributors should be compensated with dnt tokens after contrib period ended"
                 (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
                                                        {:from owner1
-                                                        :args [0 0 10]})))))
+                                                        :args [0 10]})))))
 
               (<! (mine-ch! web3))
 

@@ -84,7 +84,7 @@
                                                :output-dir "test-fig-compiled",
                                                :target :nodejs,
                                                :optimizations :none,
-                                               :verbose false
+                                               :verbose true
                                                :source-map true}}
                                    {:id "test"
                                     :source-paths ["src/cljs" "test"]

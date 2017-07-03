@@ -22,17 +22,15 @@
      :contrib-period/stake (big-num->ether contrib-period-stake)}))
 
 (defn contrib-period-args [contrib-period]
-  ((juxt :contribution/period-index
-         :contrib-period/soft-cap-amount
+  ((juxt :contrib-period/soft-cap-amount
          :contrib-period/after-soft-cap-duration
          :contrib-period/hard-cap-amount
          :contrib-period/start-time
          :contrib-period/end-time)
     contrib-period))
 
-(defn parse-get-configuration [[stopped? required-count wallet founder1 founder2 early-sponsor advisers transfers-enabled?]]
+(defn parse-get-configuration [[stopped? wallet founder1 founder2 early-sponsor advisers transfers-enabled?]]
   {:contribution/stopped? stopped?
-   :contribution/required-count (bn/->number required-count)
    :contribution/wallet wallet
    :contribution/founder1 founder1
    :contribution/founder2 founder2

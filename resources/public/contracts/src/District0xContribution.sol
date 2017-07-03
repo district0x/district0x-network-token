@@ -64,18 +64,18 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
                                             // but stored for accounting and security purposes
     }
 
-    uint softCapAmount;                                 // Soft cap of contribution period in wei
-    uint afterSoftCapDuration;                          // Number of seconds to the end of sale from the moment of reaching soft cap (unless reaching hardcap)
-    uint hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
-    uint startTime;                                     // Start time of contribution period in UNIX time
-    uint endTime;                                       // End time of contribution period in UNIX time
-    bool isEnabled;                                     // If contribution period was enabled by multisignature
-    bool isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
-    bool softCapReached;                                // If soft cap was reached
-    bool hardCapReached;                                // If hard cap was reached
-    uint totalContributed;                              // Total amount of ETH contributed in given period
-    address[] contributorsKeys;                         // Addresses of all contributors in given contribution period
-    mapping (address => Contributor) contributors;
+    uint public softCapAmount;                                 // Soft cap of contribution period in wei
+    uint public afterSoftCapDuration;                          // Number of seconds to the end of sale from the moment of reaching soft cap (unless reaching hardcap)
+    uint public hardCapAmount;                                 // When reached this amount of wei, the contribution will end instantly
+    uint public startTime;                                     // Start time of contribution period in UNIX time
+    uint public endTime;                                       // End time of contribution period in UNIX time
+    bool public isEnabled;                                     // If contribution period was enabled by multisignature
+    bool public isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
+    bool public softCapReached;                                // If soft cap was reached
+    bool public hardCapReached;                                // If hard cap was reached
+    uint public totalContributed;                              // Total amount of ETH contributed in given period
+    address[] public contributorsKeys;                         // Addresses of all contributors in given contribution period
+    mapping (address => Contributor) public contributors;
 
     event onContribution(uint totalContributed, address indexed contributor, uint amount,
         uint contributorsCount);
