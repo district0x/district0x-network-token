@@ -25,6 +25,23 @@
 (def interceptors district0x.events/interceptors)
 
 (reg-event-fx
+  :load-ip-location
+  interceptors
+  (fn [{:keys [db]}]
+    {:http-xhrio [{:method :get
+                   :uri "https://ipinfo.io/json"
+                   :timeout 20000
+                   :response-format (ajax/json-response-format)
+                   :on-success [:ip-location-loaded]
+                   :on-failure [:district0x.log/error]}]}))
+
+(reg-event-fx
+  :ip-location-loaded
+  interceptors
+  (fn [{:keys [db]} [{:strs [country]}]]
+    {:db (assoc db :country-code country)}))
+
+(reg-event-fx
   :update-now
   interceptors
   (fn [{:keys [db]}]
@@ -315,11 +332,11 @@
                              :dispatch [:deploy-contribution-contract
                                         (merge
                                           (when (<= 10 (count my-addresses))
-                                            #_ {:contribution/founder1 (first my-addresses)
-                                             :contribution/founder2 (second my-addresses)
-                                             :contribution/early-sponsor (first my-addresses)
-                                             :contribution/wallet (nth my-addresses 3)
-                                             :contribution/advisers (drop 4 (take 7 my-addresses))}
+                                            #_{:contribution/founder1 (first my-addresses)
+                                               :contribution/founder2 (second my-addresses)
+                                               :contribution/early-sponsor (first my-addresses)
+                                               :contribution/wallet (nth my-addresses 3)
+                                               :contribution/advisers (drop 4 (take 7 my-addresses))}
                                             {:contribution/founder1 (first my-addresses)
                                              :contribution/founder2 (first my-addresses)
                                              :contribution/early-sponsor (first my-addresses)
