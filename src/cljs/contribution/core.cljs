@@ -40,7 +40,7 @@
                                                        [:contribution/get-configuration]
                                                        [:contribution/setup-event-listeners]]
                                           :halt? true}]}
-                    :district0x/dispatch [:load-ip-location]
+                    ;:district0x/dispatch [:load-ip-location]
                     :dispatch-interval {:dispatch [:update-now]
                                         :ms 1000
                                         :db-path [:update-now-interval]}}}])
