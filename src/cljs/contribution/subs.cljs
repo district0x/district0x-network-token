@@ -41,9 +41,9 @@
     (:contribution/contrib-period db)))
 
 (reg-sub
-  :us-ip?
+  :disallowed-country?
   (fn [db]
-    (= "US" (:country-code db))))
+    (:disallowed-country? db)))
 
 (reg-sub
   :contribution/current-contrib-period-status

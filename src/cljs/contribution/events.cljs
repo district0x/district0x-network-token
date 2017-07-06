@@ -39,7 +39,7 @@
   :ip-location-loaded
   interceptors
   (fn [{:keys [db]} [{:strs [country]}]]
-    {:db (assoc db :country-code country)}))
+    {:db (assoc db :disallowed-country? (contains? constants/disallowed-countries country))}))
 
 (reg-event-fx
   :update-now

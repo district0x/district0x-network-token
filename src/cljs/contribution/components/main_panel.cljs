@@ -323,7 +323,7 @@
         confirmed-not-us-citizen? (subscribe [:confirmed-not-us-citizen?])
         confirmed-terms? (subscribe [:confirmed-terms?])
         confirmations-submitted? (subscribe [:confirmations-submitted?])
-        us-ip? (subscribe [:us-ip?])
+        disallowed-country? (subscribe [:disallowed-country?])
         ]
     (fn []
       (let [{:keys [:contrib-period/stake :contrib-period/enabled?]} @current-contrib-period
@@ -338,8 +338,8 @@
         [row
          {:center "xs"
           :style styles/margin-top-gutter-more}
-         (if @us-ip?
-           [:div "We have detected that you are visiting this page from the United States. Please note: US citizens and residents are not permitted to participate in the district0x Contribution Period."]
+         (if @disallowed-country?
+           [:div "We have detected that you are visiting this page from the United States or another unpermitted country. Please note: US citizens and residents are not permitted to participate in the district0x Contribution Period."]
            (if @confirmations-submitted?
              [:div
               [:h2
@@ -349,9 +349,11 @@
               [:div
                {:style styles/full-width}
                "You can send Ether directly to contribution smart contract at"]
-              [:h3
+              [:h1
                {:style (merge styles/full-width
-                              {:color styles/theme-green})}
+                              styles/margin-top-gutter-less
+                              {:color styles/theme-green
+                               :font-family "filson-soft, sans-serif"})}
                "district0x.eth"]
               [:div
                {:style (merge styles/full-width
@@ -432,7 +434,7 @@
                   :checked @confirmed-terms?
                   :on-check #(dispatch [:set-confirmation :confirmed-terms? %2])}]
                 [ui/checkbox
-                 {:label "I confirm that I am not a citizen or resident of the United States"
+                 {:label "I confirm that I am not a citizen or resident of the United States or other unpermitted country"
                   :checked @confirmed-not-us-citizen?
                   :on-check #(dispatch [:set-confirmation :confirmed-not-us-citizen? %2])}]]
                [:div
