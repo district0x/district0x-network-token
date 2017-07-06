@@ -34,10 +34,9 @@
                    {:async-flow {:first-dispatch [:district0x/load-smart-contracts {:version constants/contracts-version}]
                                  :rules [{:when :seen?
                                           :events [:district0x/smart-contracts-loaded :district0x/my-addresses-loaded]
-                                          :dispatch-n [[:contribution/addresses->owners?]
-                                                       [:watch-dnt-balances]
+                                          :dispatch-n [[:watch-dnt-balances]
                                                        [:district0x/watch-my-eth-balances]
-                                                       [:contribution/get-contrib-period constants/current-contrib-period]
+                                                       [:contribution/get-contrib-period]
                                                        [:contribution/get-configuration]
                                                        [:contribution/setup-event-listeners]]
                                           :halt? true}]}

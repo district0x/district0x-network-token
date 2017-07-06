@@ -8,12 +8,12 @@
     [re-frame.core :refer [dispatch]]))
 
 (s/def :contribution/stopped? boolean?)
-(s/def :contribution/address->owner? (s/map-of u/address? boolean?))
 (s/def :contribution/founder1 (s/nilable u/address?))
 (s/def :contribution/founder2 (s/nilable u/address?))
 (s/def :contribution/early-sponsor (s/nilable u/address?))
 (s/def :contribution/wallet (s/nilable u/address?))
 (s/def :contribution/advisers (s/coll-of u/address?))
+(s/def :contribution/max-gas-price u/non-neg?)
 (s/def :dnt-token/transfers-enabled? boolean?)
 
 (s/def :contrib-period/soft-cap-amount u/not-neg?)
@@ -44,38 +44,37 @@
                                                   :contrib-period/stake
                                                   :contrib-period/loading?]))
 
-(s/def :contribution/contrib-periods (s/map-of number? :contribution/contrib-period))
-
-(s/def :form.contribution/contribute ::district0x.db/submit-form)
-(s/def :form.contribution/enable-contrib-period ::district0x.db/submit-form)
+(s/def :form.contribution/contribute (s/map-of :district0x.db/only-default-kw :district0x.db/submit-form))
+(s/def :form.contribution/enable-contrib-period (s/map-of :district0x.db/only-default-kw :district0x.db/submit-form))
 
 (def default-db
   (merge
     district0x.db/default-db
-    {:load-node-addresses? false
-     :node-url "https://mainnet.infura.io/" #_ "http://localhost:8549"
-     :smart-contracts {:contribution {:name "District0xContribution" :address "0xfbfe6376417ec60322909ae8b9de3ee3de268d9d"}
-                       :dnt-token {:name "District0xNetworkToken" :address "0x9188ca329c7a6bb7f9fd8346624cb6e14487d557"}
+    {:node-url "https://mainnet.infura.io/" #_ "http://localhost:8549"
+     :smart-contracts {:contribution {:name "District0xContribution" :address "0xd914a0295108229bdb75e82b916e9904cab616e8"}
+                       :dnt-token {:name "District0xNetworkToken" :address "0xc9a404b63206a134b36a01a984831770fec52b6d"}
                        :mini-me-token-factory {:name "MiniMeTokenFactory" :address "0xe0dd94dd042602c39103867bd31bcfce24bce460"}
                        :multisig-wallet {:name "MultisigWallet" :address "0x0000000000000000000000000000000000000000"}}
      :now (t/now)
-
+     :country-code (js/geoplugin_countryCode)
+     :confirmed-terms? false
+     :confirmed-not-us-citizen? false
+     :confirmations-submitted? false
      :dnt-token/transfers-enabled? false
      :contribution/stopped? false
-     :contribution/address->owner? {}
      :contribution/founder1 nil
      :contribution/founder2 nil
      :contribution/early-sponsor nil
      :contribution/wallet nil
      :contribution/advisers []
-     :contribution/contrib-periods {}
+     :contribution/max-gas-price 0
+     :contribution/contrib-period {}
+     :form.contribution/contribute {:default {:loading? false
+                                              :gas-limit 200000
+                                              :data {:contribution/amount 1}
+                                              :errors #{}}}
 
-     :form.contribution/contribute {:loading? false
-                                    :gas-limit 600000
-                                    :data {:contribution/amount 1}
-                                    :errors #{}}
-
-     :form.contribution/enable-contrib-period {:loading? false
-                                               :gas-limit 1000000
-                                               :data {:contribution/period-index 0}
-                                               :errors #{}}}))
+     :form.contribution/enable-contrib-period {:default {:loading? false
+                                                         :gas-limit 100000
+                                                         :data {:contribution/period-index 0}
+                                                         :errors #{}}}}))

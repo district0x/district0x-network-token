@@ -11,7 +11,6 @@ import './ERC20Basic.sol';
  * Slightly modified version of OpenZeppelin's ERC20
  * Original can be found ./orig/ERC20.sol or https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/ERC20.sol
  * Modifications:
- * - Added onlyPayloadSize modifier
  * - Added doTransfer so it can be used in VestedToken with implmentation from MiniMe token
  *
  */

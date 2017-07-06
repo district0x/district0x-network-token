@@ -6,7 +6,7 @@
   :dependencies [[cljs-react-material-ui "0.2.44"]
                  [cljs-web3 "0.19.0-0-2"]
                  [day8.re-frame/async-flow-fx "0.0.6"]
-                 [district0x "0.1.5"]
+                 [district0x "0.1.6"]
                  [lein-doo "0.1.7"]
                  [madvas/reagent-patched "0.6.1" :exclusions [cljsjs/react cljsjs/react-dom]]
                  [medley "0.8.3"]

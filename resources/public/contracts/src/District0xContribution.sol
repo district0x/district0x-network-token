@@ -43,8 +43,6 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     uint public constant CONTRIB_PERIOD2_STAKE = 140000000 ether;       // 140M DNT
     uint public constant CONTRIB_PERIOD3_STAKE = 40000000 ether;        // 40M  DNT
 
-    uint8 public constant CONTRIB_PERIODS = 3;                          // Number of Contribution Periods
-
     uint public minContribAmount = 0.01 ether;                          // 0.01 ether
     uint public maxGasPrice = 50000000000;                              // 50 GWei
 
@@ -70,7 +68,6 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     uint public startTime;                                     // Start time of contribution period in UNIX time
     uint public endTime;                                       // End time of contribution period in UNIX time
     bool public isEnabled;                                     // If contribution period was enabled by multisignature
-    bool public isCancelled;                                   // If contribution period was canceled (only possible for 2. or 3. period)
     bool public softCapReached;                                // If soft cap was reached
     bool public hardCapReached;                                // If hard cap was reached
     uint public totalContributed;                              // Total amount of ETH contributed in given period
@@ -103,8 +100,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         advisers = _advisers;
     }
     
-    // @notice Returns index of currently running contribution period
-    //  If there's none, returns index 3 (non-existing)
+    // @notice Returns true if contribution period is currently running
     function isContribPeriodRunning() constant returns (bool) {
         return !hardCapReached &&
                isEnabled &&
@@ -172,7 +168,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
 
         multisigWallet.transfer(contribValue);
         if (excessContribValue > 0) {
-            contributor.transfer(excessContribValue);
+            msg.sender.transfer(excessContribValue);
         }
         onContribution(newTotalContributed, contributor, contribValue, contributorsKeys.length);
     }
@@ -218,7 +214,6 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     //  Only owner should be able to execute
     //  Setting first contribution period sets up vesting for founders & advisors
     //  Contribution period should still not be enabled after calling this method
-    // @param i Contribution period index (0-2)
     // @param softCapAmount Soft Cap in wei
     // @param afterSoftCapDuration Number of seconds till the end of sale in the moment of reaching soft cap (unless reaching hard cap)
     // @param hardCapAmount Hard Cap in wei
@@ -351,7 +346,6 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // MiniMe Controller default settings for allowing token transfers.
     function proxyPayment(address _owner) payable public returns (bool) {
         throw;
-        return false;
     }
 
     // Before transfers are enabled for everyone, only this contract is allowed to distribute DNT
@@ -363,6 +357,10 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         return tokenTransfersEnabled;
     }
 
+    function isTokenSaleToken(address tokenAddr) returns(bool) {
+        return district0xNetworkToken == tokenAddr;
+    }
+
     /*
      Following constant methods are used for tests and contribution web app
      They don't impact logic of contribution contract, therefor DOES NOT NEED TO BE AUDITED
@@ -371,12 +369,11 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // Used by contribution front-end to obtain contribution period properties
     function getContribPeriod()
         constant
-        returns (bool[4] boolValues, uint[8] uintValues)
+        returns (bool[3] boolValues, uint[8] uintValues)
     {
         boolValues[0] = isEnabled;
-        boolValues[1] = isCancelled;
-        boolValues[2] = softCapReached;
-        boolValues[3] = hardCapReached;
+        boolValues[1] = softCapReached;
+        boolValues[2] = hardCapReached;
 
         uintValues[0] = softCapAmount;
         uintValues[1] = afterSoftCapDuration;
@@ -393,13 +390,14 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // Used by contribution front-end to obtain contribution contract properties
     function getConfiguration()
         constant
-        returns (bool, address, address, address, address, address[] _advisers, bool)
+        returns (bool, address, address, address, address, address[] _advisers, bool, uint)
     {
         _advisers = new address[](advisers.length);
         for (uint i = 0; i < advisers.length; i++) {
             _advisers[i] = advisers[i];
         }
-        return (stopped, multisigWallet, founder1, founder2, earlySponsor, _advisers, tokenTransfersEnabled);
+        return (stopped, multisigWallet, founder1, founder2, earlySponsor, _advisers, tokenTransfersEnabled,
+            maxGasPrice);
     }
 
     // Used by contribution front-end to obtain contributor's properties

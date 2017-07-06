@@ -2,6 +2,7 @@ pragma solidity ^0.4.11;
 
 import "./ERC20Basic.sol";
 import "./Ownable.sol";
+import "./District0xNetworkToken.sol";
 
 /**
  * @title Contracts that should not own Tokens
@@ -11,6 +12,8 @@ import "./Ownable.sol";
  * owner to reclaim the tokens.
  */
 contract HasNoTokens is Ownable {
+
+  District0xNetworkToken public district0xNetworkToken;
 
  /**
   * @dev Reject all ERC23 compatible tokens
@@ -22,11 +25,14 @@ contract HasNoTokens is Ownable {
     throw;
   }
 
+  function isTokenSaleToken(address tokenAddr) returns(bool);
+
   /**
    * @dev Reclaim all ERC20Basic compatible tokens
    * @param tokenAddr address The address of the token contract
    */
   function reclaimToken(address tokenAddr) external onlyOwner {
+    require(!isTokenSaleToken(tokenAddr));
     ERC20Basic tokenInst = ERC20Basic(tokenAddr);
     uint256 balance = tokenInst.balanceOf(this);
     tokenInst.transfer(msg.sender, balance);

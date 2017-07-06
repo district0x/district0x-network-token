@@ -21,18 +21,33 @@
     (get-in balances [(:address (:contribution contracts)) :dnt])))
 
 (reg-sub
-  :contribution/address->owner?
-  (fn [db _]
-    (:contribution/address->owner? db)))
+  :confirmed-not-us-citizen?
+  (fn [db]
+    (:confirmed-not-us-citizen? db)))
 
 (reg-sub
-  :contribution/current-contrib-period
+  :confirmed-terms?
   (fn [db]
-    ((:contribution/contrib-periods db) constants/current-contrib-period)))
+    (:confirmed-terms? db)))
+
+(reg-sub
+  :confirmations-submitted?
+  (fn [db]
+    (:confirmations-submitted? db)))
+
+(reg-sub
+  :contribution/contrib-period
+  (fn [db]
+    (:contribution/contrib-period db)))
+
+(reg-sub
+  :us-ip?
+  (fn [db]
+    (= "US" (:country-code db))))
 
 (reg-sub
   :contribution/current-contrib-period-status
-  :<- [:contribution/current-contrib-period]
+  :<- [:contribution/contrib-period]
   :<- [:db/now]
   (fn [[{:keys [:contrib-period/start-time :contrib-period/end-time]} now]]
     (cond
@@ -53,7 +68,8 @@
   (fn [db]
     (merge
       (select-keys db [:contribution/stopped? :contribution/founder1 :contribution/founder2
-                       :contribution/early-sponsor :contribution/wallet :contribution/advisers])
+                       :contribution/early-sponsor :contribution/wallet :contribution/advisers
+                       :contribution/max-gas-price])
       {:contribution-address (get-in db [:smart-contracts :contribution :address])
        :dnt-token-address (get-in db [:smart-contracts :dnt-token :address])})))
 
@@ -64,14 +80,8 @@
     (get-in contracts [:contribution :address])))
 
 (reg-sub
-  :db/active-address-owner?
-  :<- [:district0x/active-address]
-  :<- [:contribution/address->owner?]
-  (fn [[active-address address->owner?]]
-    (address->owner? active-address)))
-
-(reg-sub
   :db/active-address-founder?
+  :<- [:district0x/active-address]
   :<- [:contribution/configuration]
   (fn [[active-address {:keys [:contribution/founder1 :contribution/founder2]}]]
     (contains? #{founder1 founder2} active-address)))
@@ -79,10 +89,10 @@
 (reg-sub
   :form.contribution/enable-contrib-period
   (fn [db _]
-    (:form.contribution/enable-contrib-period db)))
+    (:default (:form.contribution/enable-contrib-period db))))
 
 (reg-sub
   :form.contribution/contribute
   (fn [db _]
-    (:form.contribution/contribute db)))
+    (:default (:form.contribution/contribute db))))
 

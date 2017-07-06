@@ -86,44 +86,32 @@
                                                                         :secretKey secret})))
                                                     :locked false})))
 
-    (let [mmtf-ch (chan)
-          contrib-ch (chan)
-          dnt-token-ch (chan)]
+    (set! MiniMeTokenFactory (<! (test-utils/deploy-contract-ch!
+                                   {:web3 web3
+                                    :from owner1
+                                    :abi (fetch-abi "MiniMeTokenFactory")
+                                    :bin (fetch-bin "MiniMeTokenFactory")
+                                    :args []})))
 
-      (test-utils/deploy-contract!
-        {:web3 web3
-         :from owner1
-         :abi (fetch-abi "MiniMeTokenFactory")
-         :bin (fetch-bin "MiniMeTokenFactory")
-         :res-ch mmtf-ch
-         :args []})
+    (set! Contribution (<! (test-utils/deploy-contract-ch!
+                             {:web3 web3
+                              :from owner1
+                              :abi (fetch-abi "District0xContribution")
+                              :bin (fetch-bin "District0xContribution")
+                              :gas 3000000
+                              :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})))
 
-      (set! MiniMeTokenFactory (<! mmtf-ch))
+    (set! DNTToken (<! (test-utils/deploy-contract-ch!
+                         {:web3 web3
+                          :from owner1
+                          :abi (fetch-abi "District0xNetworkToken")
+                          :bin (fetch-bin "District0xNetworkToken")
+                          :args [(aget Contribution "address") (aget MiniMeTokenFactory "address")]})))
 
-      (test-utils/deploy-contract!
-        {:web3 web3
-         :from owner1
-         :abi (fetch-abi "District0xContribution")
-         :bin (fetch-bin "District0xContribution")
-         :res-ch contrib-ch
-         :gas 4500000
-         :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})
-
-      (set! Contribution (<! contrib-ch))
-
-      (test-utils/deploy-contract!
-        {:web3 web3
-         :from owner1
-         :abi (fetch-abi "District0xNetworkToken")
-         :bin (fetch-bin "District0xNetworkToken")
-         :res-ch dnt-token-ch
-         :args [(aget Contribution "address") (aget MiniMeTokenFactory "address")]})
-
-      (set! DNTToken (<! dnt-token-ch))
-      (state-call! Contribution :set-district0x-network-token {:from owner1
-                                                               :args [(aget DNTToken "address")]
-                                                               :on-error test-utils/assert-no-error
-                                                               :callback #(done)}))))
+    (state-call! Contribution :set-district0x-network-token {:from owner1
+                                                             :args [(aget DNTToken "address")]
+                                                             :on-error test-utils/assert-no-error
+                                                             :callback #(done)})))
 
 (use-fixtures
   :each
@@ -182,14 +170,14 @@
 
 
         (testing "Should be able to set contribution period"
-          (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                 {:from owner1
-                                                  :args (contrib-period-args
-                                                          {:contrib-period/soft-cap-amount soft-cap-amount
-                                                           :contrib-period/after-soft-cap-duration after-soft-cap-duration
-                                                           :contrib-period/hard-cap-amount hard-cap-amount
-                                                           :contrib-period/start-time start-time
-                                                           :contrib-period/end-time end-time})}))))
+          (is (u/sha3? (<! (state-call-ch! Contribution :set-contrib-period
+                                           {:from owner1
+                                            :args (contrib-period-args
+                                                    {:contrib-period/soft-cap-amount soft-cap-amount
+                                                     :contrib-period/after-soft-cap-duration after-soft-cap-duration
+                                                     :contrib-period/hard-cap-amount hard-cap-amount
+                                                     :contrib-period/start-time start-time
+                                                     :contrib-period/end-time end-time})}))))
 
           (let [contrib-period (<! (get-contrib-period))]
             (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
@@ -209,6 +197,12 @@
           (is (= 5000000 (<! (get-dnt-balance community-advisors))))
           (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address")))))
 
+          (testing "Shouldn't be able to reclaim DNT tokens"
+            (is (u/error? (<! (state-call-ch! Contribution :reclaim-token
+                                              {:from owner1
+                                               :args [(aget DNTToken "address")]}))))
+            (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address"))))))
+
           (testing "Token grants are setup okay"
             (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 community-advisors]]
               (is (bn/eq? (<! (contract-call-ch DNTToken :token-grants-count founder1)) 1))
@@ -218,14 +212,14 @@
                 (bn/eq? vested-amount 0))))
 
           (testing "Setting first contrib period again will keep correct dnt balances"
-            (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                                   {:from owner1
-                                                    :args (contrib-period-args
-                                                            {:contrib-period/soft-cap-amount soft-cap-amount
-                                                             :contrib-period/after-soft-cap-duration after-soft-cap-duration
-                                                             :contrib-period/hard-cap-amount hard-cap-amount
-                                                             :contrib-period/start-time start-time
-                                                             :contrib-period/end-time end-time})}))))
+            (is (u/sha3? (<! (state-call-ch! Contribution :set-contrib-period
+                                             {:from owner1
+                                              :args (contrib-period-args
+                                                      {:contrib-period/soft-cap-amount soft-cap-amount
+                                                       :contrib-period/after-soft-cap-duration after-soft-cap-duration
+                                                       :contrib-period/hard-cap-amount hard-cap-amount
+                                                       :contrib-period/start-time start-time
+                                                       :contrib-period/end-time end-time})}))))
 
             (let [contrib-period (<! (get-contrib-period))]
               (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
@@ -283,9 +277,9 @@
 
               (testing "Users should be able to contribute"
                 (doseq [[contributor amount] contributions]
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :contribute
-                                                         {:from contributor
-                                                          :value-ether amount})))))
+                  (is (u/sha3? (<! (state-call-ch! Contribution :contribute
+                                                   {:from contributor
+                                                    :value-ether amount})))))
                 (is (bn/eq? (bn/+ wallet-balance-before contribs-total) (<! (get-balance-ch web3 wallet))))
 
                 (<! (mine-ch! web3))
@@ -336,14 +330,14 @@
                                    (web3/to-big-number "300000000000000000000000000")]
             dnt-compensated-total (reduce bn/+ (web3/to-big-number 0) expected-dnt-balances)]
 
-        (is (u/tx-address? (<! (state-call-ch! Contribution :set-contrib-period
-                                               {:from owner1
-                                                :args (contrib-period-args
-                                                        {:contrib-period/soft-cap-amount soft-cap-amount
-                                                         :contrib-period/after-soft-cap-duration after-soft-cap-seconds
-                                                         :contrib-period/hard-cap-amount hard-cap-amount
-                                                         :contrib-period/start-time start-time
-                                                         :contrib-period/end-time end-time})}))))
+        (is (u/sha3? (<! (state-call-ch! Contribution :set-contrib-period
+                                         {:from owner1
+                                          :args (contrib-period-args
+                                                  {:contrib-period/soft-cap-amount soft-cap-amount
+                                                   :contrib-period/after-soft-cap-duration after-soft-cap-seconds
+                                                   :contrib-period/hard-cap-amount hard-cap-amount
+                                                   :contrib-period/start-time start-time
+                                                   :contrib-period/end-time end-time})}))))
 
         (let [contrib-period (<! (get-contrib-period))]
           (is (= (wei->eth->num soft-cap-amount) (:contrib-period/soft-cap-amount contrib-period)))
@@ -355,7 +349,7 @@
           (is (zero? (:contrib-period/total-contributed contrib-period)))
           (is (zero? (:contrib-period/contributors-count contrib-period))))
 
-        (is (u/tx-address? (<! (state-call-ch! Contribution :enable-contrib-period {:from wallet}))))
+        (is (u/sha3? (<! (state-call-ch! Contribution :enable-contrib-period {:from wallet}))))
 
         (<! (increase-time-and-mine-ch! web3 start-time-seconds))
 
@@ -364,8 +358,8 @@
         (testing "Users should be able to contribute and hit soft cap"
           (let [wallet-balance-before (<! (get-balance-ch web3 wallet))]
             (doseq [[contributor amount] contributions]
-              (is (u/tx-address? (<! (state-call-ch! Contribution :contribute {:from contributor
-                                                                               :value-ether amount})))))
+              (is (u/sha3? (<! (state-call-ch! Contribution :contribute {:from contributor
+                                                                         :value-ether amount})))))
             (is (bn/eq? (bn/+ wallet-balance-before contribs-total) (<! (get-balance-ch web3 wallet)))))
 
           (<! (mine-ch! web3))
@@ -392,9 +386,9 @@
                   contributions (take half-count contributions)
                   expected-dnt-balances (take half-count expected-dnt-balances)
                   contributors (take half-count contributors)]
-              (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
-                                                     {:from owner1
-                                                      :args [0 half-count]}))))
+              (is (u/sha3? (<! (state-call-ch! Contribution :compensate-contributors
+                                               {:from owner1
+                                                :args [0 half-count]}))))
 
               (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
                 (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor))))))
@@ -407,9 +401,9 @@
                   contributions (take-last half-count contributions)
                   expected-dnt-balances (take-last half-count expected-dnt-balances)
                   contributors (take-last half-count contributors)]
-              (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
-                                                     {:from owner1
-                                                      :args [0 1000]}))))
+              (is (u/sha3? (<! (state-call-ch! Contribution :compensate-contributors
+                                               {:from owner1
+                                                :args [0 1000]}))))
 
               (doseq [[contributor expected-dnt] (zipmap contributors expected-dnt-balances)]
                 (is (bn/eq? expected-dnt (<! (contract-call-ch DNTToken :balance-of contributor)))))))
@@ -464,8 +458,8 @@
 
               (testing "Users should be able to contribute and hit hard cap"
                 (doseq [[contributor amount] (take 2 contributions)]
-                  (is (u/tx-address? (<! (state-call-ch! Contribution :contribute {:from contributor
-                                                                                   :value-ether amount})))))
+                  (is (u/sha3? (<! (state-call-ch! Contribution :contribute {:from contributor
+                                                                             :value-ether amount})))))
 
                 (<! (mine-ch! web3))
 
@@ -493,9 +487,9 @@
               (<! (increase-time-and-mine-ch! web3 1))
 
               (testing "Contributors should be compensated with dnt tokens after contrib period ended"
-                (is (u/tx-address? (<! (state-call-ch! Contribution :compensate-contributors
-                                                       {:from owner1
-                                                        :args [0 10]})))))
+                (is (u/sha3? (<! (state-call-ch! Contribution :compensate-contributors
+                                                 {:from owner1
+                                                  :args [0 10]})))))
 
               (<! (mine-ch! web3))
 
@@ -505,20 +499,20 @@
                                                    :args [12 (eth->wei->num 1)]})))))
 
               (testing "Should be able to enable dnt token transfers"
-                (is (u/tx-address? (<! (state-call-ch! Contribution :enable-district0x-network-token-transfers
-                                                       {:from owner1})))))
+                (is (u/sha3? (<! (state-call-ch! Contribution :enable-district0x-network-token-transfers
+                                                 {:from owner1})))))
 
               (testing "Trading dnt should be enabled"
-                (is (u/tx-address? (<! (state-call-ch! DNTToken :transfer
-                                                       {:from (nth accounts 11) :args [12 (eth->wei->num 1)]}))))
+                (is (u/sha3? (<! (state-call-ch! DNTToken :transfer
+                                                 {:from (nth accounts 11) :args [12 (eth->wei->num 1)]}))))
                 (is (= 1 (wei->eth->num (bn/->number (<! (contract-call-ch DNTToken :balance-of 12)))))))
 
               (testing "Vesting works"
                 (is (u/error? (<! (state-call-ch! DNTToken :transfer {:from early-sponsor
                                                                       :args [founder2 (eth->wei->num 1)]})))))
               (testing "Community advisors stake should not be vested"
-                (is (u/tx-address? (<! (state-call-ch! DNTToken :transfer {:from community-advisors
-                                                                           :args [founder2 (eth->wei->num 1)]})))))
+                (is (u/sha3? (<! (state-call-ch! DNTToken :transfer {:from community-advisors
+                                                                     :args [founder2 (eth->wei->num 1)]})))))
 
               (testing "Other addresses besides contribution contract can't create vesting"
                 (is (u/error? (<! (state-call-ch! DNTToken :grant-vested-tokens
@@ -533,6 +527,6 @@
 
               (testing "Funds should not be vested after vesting period"
                 (<! (increase-time-and-mine-ch! web3 (time/in-seconds (time/weeks 24))))
-                (is (u/tx-address? (<! (state-call-ch! DNTToken :transfer {:from early-sponsor
-                                                                           :args [founder2 (eth->wei->num 1)]})))))))))
+                (is (u/sha3? (<! (state-call-ch! DNTToken :transfer {:from early-sponsor
+                                                                     :args [founder2 (eth->wei->num 1)]})))))))))
       (done))))
