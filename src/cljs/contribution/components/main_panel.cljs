@@ -354,7 +354,7 @@
                               styles/margin-top-gutter-less
                               {:color styles/theme-green
                                :font-family "filson-soft, sans-serif"})}
-               "district0x.eth"]
+               "district.eth"]
               [:div
                {:style (merge styles/full-width
                               {:color styles/theme-orange
