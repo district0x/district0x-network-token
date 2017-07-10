@@ -5,6 +5,7 @@ import "./minime_interface/TokenController.sol";
 import "./minime_interface/ApproveAndCallFallback.sol";
 import "./ERC20.sol";
 import "./SafeMath.sol";
+import "./ERC20Basic.sol";
 
 /*
     Slightly modified version of Giveth's MiniMeToken
@@ -472,10 +473,31 @@ contract MiniMeToken is ERC20, Controlled {
         }
     }
 
+    //////////
+    // Safety Methods
+    //////////
+
+    /// @notice This method can be used by the controller to extract mistakenly
+    ///  sent tokens to this contract.
+    /// @param _token The address of the token contract that you want to recover
+    ///  set to 0 in case you want to extract ether.
+    function claimTokens(address _token) onlyController {
+        if (_token == 0x0) {
+            controller.transfer(this.balance);
+            return;
+        }
+
+        ERC20Basic token = ERC20Basic(_token);
+        uint balance = token.balanceOf(this);
+        token.transfer(controller, balance);
+        ClaimedTokens(_token, controller, balance);
+    }
+
 
 ////////////////
 // Events
 ////////////////
+    event ClaimedTokens(address indexed _token, address indexed _controller, uint _amount);
     event Transfer(address indexed _from, address indexed _to, uint256 _amount);
     event NewCloneToken(address indexed _cloneToken, uint _snapshotBlock);
     event Approval(

@@ -1,42 +1,37 @@
 pragma solidity ^0.4.11;
 
-/**
- * @title Ownable
- * @dev The Ownable contract has an owner address, and provides basic authorization control
- * functions, this simplifies the implementation of "user permissions".
- */
+
+/// @dev `Owned` is a base level contract that assigns an `owner` that can be
+///  later changed
 contract Ownable {
-  address public owner;
 
-
-  /**
-   * @dev The Ownable constructor sets the original `owner` of the contract to the sender
-   * account.
-   */
-  function Ownable() {
-    owner = msg.sender;
-  }
-
-
-  /**
-   * @dev Throws if called by any account other than the owner.
-   */
-  modifier onlyOwner() {
-    if (msg.sender != owner) {
-      throw;
+    /// @dev `owner` is the only address that can call a function with this
+    /// modifier
+    modifier onlyOwner() {
+        require(msg.sender == owner);
+        _;
     }
-    _;
-  }
 
+    address public owner;
 
-  /**
-   * @dev Allows the current owner to transfer control of the contract to a newOwner.
-   * @param newOwner The address to transfer ownership to.
-   */
-  function transferOwnership(address newOwner) onlyOwner {
-    if (newOwner != address(0)) {
-      owner = newOwner;
+    /// @notice The Constructor assigns the message sender to be `owner`
+    function Ownable() {
+        owner = msg.sender;
     }
-  }
 
+    address public newOwner;
+
+    /// @notice `owner` can step down and assign some other address to this role
+    /// @param _newOwner The address of the new owner. 0x0 can be used to create
+    ///  an unowned neutral vault, however that cannot be undone
+    function changeOwner(address _newOwner) onlyOwner {
+        newOwner = _newOwner;
+    }
+
+
+    function acceptOwnership() {
+        if (msg.sender == newOwner) {
+            owner = newOwner;
+        }
+    }
 }

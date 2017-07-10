@@ -98,7 +98,6 @@
                               :from owner1
                               :abi (fetch-abi "District0xContribution")
                               :bin (fetch-bin "District0xContribution")
-                              :gas 3000000
                               :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})))
 
     (set! DNTToken (<! (test-utils/deploy-contract-ch!
