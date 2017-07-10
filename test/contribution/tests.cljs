@@ -456,6 +456,16 @@
                                                                               :value-ether amount
                                                                               :gas-price 51000000000}))))))
 
+              (testing "Should be able to make emergency stop"
+                (is (u/sha3? (<! (state-call-ch! Contribution :emergency-stop {:from owner1})))))
+
+              (testing "Shouldn't be able to contribute during emergency stop"
+                (is (u/error? (<! (state-call-ch! Contribution :contribute {:from (ffirst contributions)
+                                                                            :value-ether (second (first contributions))})))))
+              (testing "Should be able to release emergency stop"
+                (is (u/sha3? (<! (state-call-ch! Contribution :release {:from owner1})))))
+
+
               (testing "Users should be able to contribute and hit hard cap"
                 (doseq [[contributor amount] (take 2 contributions)]
                   (is (u/sha3? (<! (state-call-ch! Contribution :contribute {:from contributor
@@ -528,5 +538,9 @@
               (testing "Funds should not be vested after vesting period"
                 (<! (increase-time-and-mine-ch! web3 (time/in-seconds (time/weeks 24))))
                 (is (u/sha3? (<! (state-call-ch! DNTToken :transfer {:from early-sponsor
-                                                                     :args [founder2 (eth->wei->num 1)]})))))))))
+                                                                     :args [founder2 (eth->wei->num 1)]})))))
+
+              (testing "Contribution Contract can be killed"
+                (is (u/sha3? (<! (state-call-ch! Contribution :kill {:from wallet
+                                                                     :args [wallet]})))))))))
       (done))))

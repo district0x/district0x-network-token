@@ -180,7 +180,9 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     // @param periodIndex Index of contribution period (0-2)
     // @param offset Number of first contributors to skip.
     // @param limit Max number of contributors compensated on this call
-    function compensateContributors(uint offset, uint limit) {
+    function compensateContributors(uint offset, uint limit)
+        onlyOwner
+    {
         require(isEnabled);
         require(endTime < now);
 
