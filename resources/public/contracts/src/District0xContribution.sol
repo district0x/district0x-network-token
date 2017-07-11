@@ -38,7 +38,8 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     uint public constant FOUNDER2_STAKE = 80000000 ether;               // 80M  DNT
     uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000 ether;       // 5M   DNT
     uint public constant ADVISER_STAKE = 5000000 ether;                 // 5M   DNT
-    uint public constant COMMUNITY_ADVISERS_STAKE = 5000000 ether;      // 5M   DNT
+    uint public constant ADVISER_STAKE2 = 1000000 ether;                // 1M   DNT
+    uint public constant COMMUNITY_ADVISERS_STAKE = 3000000 ether;      // 3M   DNT
     uint public constant CONTRIB_PERIOD1_STAKE = 600000000 ether;       // 600M DNT
     uint public constant CONTRIB_PERIOD2_STAKE = 140000000 ether;       // 140M DNT
     uint public constant CONTRIB_PERIOD3_STAKE = 40000000 ether;        // 40M  DNT
@@ -92,7 +93,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         address _earlySponsor,
         address[] _advisers
     ) {
-        require(_advisers.length == 3);
+        require(_advisers.length == 5);
         multisigWallet = _multisigWallet;
         founder1 = _founder1;
         founder2 = _founder2;
@@ -262,10 +263,12 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
         district0xNetworkToken.grantVestedTokens(earlySponsor, EARLY_CONTRIBUTOR_STAKE, startDate, earlyContribCliffDate, earlyContribVestingDate, true, false);
         district0xNetworkToken.grantVestedTokens(advisers[0], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
         district0xNetworkToken.grantVestedTokens(advisers[1], ADVISER_STAKE, startDate, cliffDate, vestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(advisers[2], ADVISER_STAKE2, startDate, cliffDate, vestingDate, true, false);
+        district0xNetworkToken.grantVestedTokens(advisers[3], ADVISER_STAKE2, startDate, cliffDate, vestingDate, true, false);
 
         // Community advisors stake has no vesting, but we set it up this way, so we can revoke it in case of
         // re-setting up contribution period
-        district0xNetworkToken.grantVestedTokens(advisers[2], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
+        district0xNetworkToken.grantVestedTokens(advisers[4], COMMUNITY_ADVISERS_STAKE, startDate, startDate, startDate, true, false);
     }
 
     // @notice Enables contribution period
@@ -316,6 +319,7 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
                 .add(FOUNDER2_STAKE)
                 .add(EARLY_CONTRIBUTOR_STAKE)
                 .add(ADVISER_STAKE.mul(2))
+                .add(ADVISER_STAKE2.mul(2))
                 .add(COMMUNITY_ADVISERS_STAKE)
                 .add(CONTRIB_PERIOD1_STAKE));
 
@@ -331,6 +335,15 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     {
         require(endTime < now);
         tokenTransfersEnabled = true;
+    }
+
+    // @notice Method to claim tokens accidentally sent to a DNT contract
+    //  Only multisig wallet can execute
+    // @param _token Address of claimed ERC20 Token
+    function claimTokensFromTokenDistrict0xNetworkToken(address _token)
+        onlyMultisig
+    {
+        district0xNetworkToken.claimTokens(_token, multisigWallet);
     }
 
     // @notice Kill method should not really be needed, but just in case

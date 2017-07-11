@@ -60,13 +60,15 @@
 (def ^:dynamic DNTToken nil)
 
 (def owner1 (nth accounts 0))
-(def wallet (nth accounts 9))
+(def wallet (nth accounts 10))
 (def founder1 (nth accounts 2))
 (def founder2 (nth accounts 3))
 (def early-sponsor (nth accounts 4))
 (def adviser1 (nth accounts 5))
 (def adviser2 (nth accounts 6))
-(def community-advisors (nth accounts 7))
+(def adviser3 (nth accounts 7))
+(def adviser4 (nth accounts 8))
+(def community-advisors (nth accounts 9))
 
 (defn- get-dnt-balance [address]
   (contract-call-ch (chan 1 (map wei->eth->num)) DNTToken :balance-of address))
@@ -98,7 +100,7 @@
                               :from owner1
                               :abi (fetch-abi "District0xContribution")
                               :bin (fetch-bin "District0xContribution")
-                              :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 community-advisors]]})))
+                              :args [wallet founder1 founder2 early-sponsor [adviser1 adviser2 adviser3 adviser4 community-advisors]]})))
 
     (set! DNTToken (<! (test-utils/deploy-contract-ch!
                          {:web3 web3
@@ -139,7 +141,9 @@
       (is (= early-sponsor (<! (contract-call-ch Contribution :early-sponsor))))
       (is (= adviser1 (<! (contract-call-ch Contribution :advisers 0))))
       (is (= adviser2 (<! (contract-call-ch Contribution :advisers 1))))
-      (is (= community-advisors (<! (contract-call-ch Contribution :advisers 2))))
+      (is (= adviser3 (<! (contract-call-ch Contribution :advisers 2))))
+      (is (= adviser4 (<! (contract-call-ch Contribution :advisers 3))))
+      (is (= community-advisors (<! (contract-call-ch Contribution :advisers 4))))
       (is (= 1000000000 (wei->eth->num (<! (contract-call-ch DNTToken :total-supply)))))
       (is (not (<! (contract-call-ch Contribution :token-transfers-enabled))))
       (is (= 0 (<! (get-dnt-balance founder1))))
@@ -148,6 +152,8 @@
       (is (= 0 (<! (get-dnt-balance early-sponsor))))
       (is (= 0 (<! (get-dnt-balance adviser1))))
       (is (= 0 (<! (get-dnt-balance adviser2))))
+      (is (= 0 (<! (get-dnt-balance adviser3))))
+      (is (= 0 (<! (get-dnt-balance adviser4))))
       (is (= 0 (<! (get-dnt-balance community-advisors))))
       (is (= 820000000 (<! (get-dnt-balance (aget Contribution "address")))))
       (done))))
@@ -193,7 +199,9 @@
           (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
           (is (= 5000000 (<! (get-dnt-balance adviser1))))
           (is (= 5000000 (<! (get-dnt-balance adviser2))))
-          (is (= 5000000 (<! (get-dnt-balance community-advisors))))
+          (is (= 1000000 (<! (get-dnt-balance adviser3))))
+          (is (= 1000000 (<! (get-dnt-balance adviser4))))
+          (is (= 3000000 (<! (get-dnt-balance community-advisors))))
           (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address")))))
 
           (testing "Shouldn't be able to reclaim DNT tokens"
@@ -203,7 +211,7 @@
             (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address"))))))
 
           (testing "Token grants are setup okay"
-            (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 community-advisors]]
+            (doseq [account-index [founder1 founder2 early-sponsor adviser1 adviser2 adviser3 adviser4 community-advisors]]
               (is (bn/eq? (<! (contract-call-ch DNTToken :token-grants-count founder1)) 1))
               (let [[granter amount vested-amount start-date cliff-date vesting-date]
                     (<! (contract-call-ch DNTToken :token-grant founder1 0))]
@@ -235,7 +243,9 @@
             (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
             (is (= 5000000 (<! (get-dnt-balance adviser1))))
             (is (= 5000000 (<! (get-dnt-balance adviser2))))
-            (is (= 5000000 (<! (get-dnt-balance community-advisors))))
+            (is (= 1000000 (<! (get-dnt-balance adviser3))))
+            (is (= 1000000 (<! (get-dnt-balance adviser4))))
+            (is (= 3000000 (<! (get-dnt-balance community-advisors))))
             (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address"))))))
 
           (testing "Only one owner shouldn't be able to enable contribution period"
@@ -259,10 +269,10 @@
 
           (testing "Contribution round 1"
             (let [wallet-balance-before (<! (get-balance-ch web3 wallet))
-                  contributions [[(nth accounts 10) 1]
-                                 [(nth accounts 11) 1.5]
-                                 [(nth accounts 12) 2]
-                                 [(nth accounts 13) 2.5]]
+                  contributions [[(nth accounts 11) 1]
+                                 [(nth accounts 12) 1.5]
+                                 [(nth accounts 13) 2]
+                                 [(nth accounts 14) 2.5]]
                   contributors (mapv first contributions)
                   contribs-total (->> contributions
                                    (map second)
@@ -318,7 +328,7 @@
             after-soft-cap-seconds 200
             start-time (now-plus-seconds start-time-seconds)
             end-time (now-plus-seconds 10000)
-            contributions [[(nth accounts 10) 2] [(nth accounts 14) 2]]
+            contributions [[(nth accounts 13) 2] [(nth accounts 14) 2]]
             contributors (mapv first contributions)
             contribs-total (->> contributions
                              (map second)
@@ -444,10 +454,10 @@
 
           (testing "Contribution round 1"
             (let [wallet-balance-before (<! (get-balance-ch web3 wallet))
-                  contributions [[(nth accounts 10) 1]
-                                 [(nth accounts 11) 1.5]
-                                 [(nth accounts 12) 2]
-                                 [(nth accounts 13) 2.5]]]
+                  contributions [[(nth accounts 11) 1]
+                                 [(nth accounts 12) 1.5]
+                                 [(nth accounts 13) 2]
+                                 [(nth accounts 14) 2.5]]]
 
               (testing "Users shouldn't be able to contribute with higer gas price than allowed"
                 (let [[contributor amount] (first contributions)]
