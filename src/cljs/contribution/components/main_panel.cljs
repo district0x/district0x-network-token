@@ -432,17 +432,17 @@
                   :checked @confirmed-terms?
                   :on-check #(dispatch [:set-confirmation :confirmed-terms? %2])}]
                 [ui/checkbox
-                 {:label "I confirm that I am not a citizen or resident of the United States or other unpermitted country"
+                 {:label "I confirm that I am not a citizen or resident of the United States or other unpermitted country."
                   :checked @confirmed-not-us-citizen?
                   :on-check #(dispatch [:set-confirmation :confirmed-not-us-citizen? %2])}]
                 [ui/checkbox
                  {:label (r/as-element [:span "I understand "
                                         [:b "the maximum gas price when contributing is 50 Gwei"]
-                                        " and any transaction sent with a higher gas price will be rejected"])
+                                        " and any transaction sent with a higher gas price will be rejected."])
                   :checked @confirmed-gas-price?
                   :on-check #(dispatch [:set-confirmation :confirmed-gas-price? %2])}]
                 [ui/checkbox
-                 {:label "I understand that it may take up to 7 days from the time the contribution period ends to receive DNT"
+                 {:label "I understand that it may take up to 7 days from the time the contribution period ends to receive DNT."
                   :checked @confirmed-compensation?
                   :on-check #(dispatch [:set-confirmation :confirmed-compensation? %2])}]]
                [:div
