@@ -349,6 +349,15 @@
                               styles/margin-bottom-gutter-less)}
                "How to Contribute"]
               [:div
+               {:style (merge
+                         {:color styles/theme-orange
+                          :font-size "1em"}
+                         styles/margin-bottom-gutter-less)}
+               [:b
+                "Important: Maximum allowed gas price is " (web3/from-wei max-gas-price :gwei) " Gwei "
+                "(" max-gas-price " wei)." [:br]
+                "Recommended gas limit is 200000"]]
+              [:div
                {:style styles/full-width}
                "You can send Ether directly to contribution smart contract at"]
               [:h1
