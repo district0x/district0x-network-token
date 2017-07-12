@@ -36,6 +36,16 @@
     (:confirmations-submitted? db)))
 
 (reg-sub
+  :confirmed-gas-price?
+  (fn [db]
+    (:confirmed-gas-price? db)))
+
+(reg-sub
+  :confirmed-compensation?
+  (fn [db]
+    (:confirmed-compensation? db)))
+
+(reg-sub
   :contribution/contrib-period
   (fn [db]
     (:contribution/contrib-period db)))

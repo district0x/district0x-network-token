@@ -322,6 +322,8 @@
         contrib-config (subscribe [:contribution/configuration])
         confirmed-not-us-citizen? (subscribe [:confirmed-not-us-citizen?])
         confirmed-terms? (subscribe [:confirmed-terms?])
+        confirmed-gas-price? (subscribe [:confirmed-gas-price?])
+        confirmed-compensation? (subscribe [:confirmed-compensation?])
         confirmations-submitted? (subscribe [:confirmations-submitted?])
         disallowed-country? (subscribe [:disallowed-country?])
         ]
@@ -354,7 +356,8 @@
                               styles/margin-top-gutter-less
                               {:color styles/theme-green
                                :font-family "filson-soft, sans-serif"})}
-               "district.eth"]
+               "district.eth" [:br]
+               [:span {:style {:font-size "0.7em"}} @contribution-address]]
               [:div
                {:style (merge styles/full-width
                               {:color styles/theme-orange
@@ -410,11 +413,6 @@
                    {:size 30
                     :thickness 2}]])]
               [:div
-               {:style {:color styles/theme-orange
-                        :font-size "0.9em"}}
-               "Important: Maximum allowed gas price is " (web3/from-wei max-gas-price :gwei) " Gwei "
-               "(" max-gas-price " wei)."]
-              [:div
                {:style (merge styles/full-width)}
                "For detailed instructions watch our "
                [external-link "tutorials on Youtube" "https://youtube.com"]]]
@@ -436,7 +434,15 @@
                 [ui/checkbox
                  {:label "I confirm that I am not a citizen or resident of the United States or other unpermitted country"
                   :checked @confirmed-not-us-citizen?
-                  :on-check #(dispatch [:set-confirmation :confirmed-not-us-citizen? %2])}]]
+                  :on-check #(dispatch [:set-confirmation :confirmed-not-us-citizen? %2])}]
+                [ui/checkbox
+                 {:label "I understand the maximum gas price for this transaction is 50 Gwei and any transaction sent including a higher gas price will be rejected"
+                  :checked @confirmed-gas-price?
+                  :on-check #(dispatch [:set-confirmation :confirmed-gas-price? %2])}]
+                [ui/checkbox
+                 {:label "I understand that it may take up to 7 days from the time the contribution period ends to receive DNT"
+                  :checked @confirmed-compensation?
+                  :on-check #(dispatch [:set-confirmation :confirmed-compensation? %2])}]]
                [:div
                 {:style styles/full-width}
                 [ui/raised-button
@@ -444,7 +450,9 @@
                   :label "Continue"
                   :style styles/margin-top-gutter-less
                   :disabled (or (not @confirmed-terms?)
-                                (not @confirmed-not-us-citizen?))
+                                (not @confirmed-not-us-citizen?)
+                                (not @confirmed-gas-price?)
+                                (not @confirmed-compensation?))
                   :on-touch-tap #(dispatch [:set-confirmation :confirmations-submitted? true])}]]]]))
          (when stake
            [:div

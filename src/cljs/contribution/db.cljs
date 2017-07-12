@@ -60,6 +60,8 @@
      :disallowed-country? false
      :confirmed-terms? false
      :confirmed-not-us-citizen? false
+     :confirmed-gas-price? false
+     :confirmed-compensation? false
      :confirmations-submitted? false
      :dnt-token/transfers-enabled? false
      :contribution/stopped? false
