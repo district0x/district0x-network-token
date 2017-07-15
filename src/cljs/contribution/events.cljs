@@ -44,6 +44,23 @@
         effects))))
 
 (reg-event-fx
+  :district0x/load-my-addresses
+  interceptors
+  (fn [{:keys [db]}]
+    (println "web3 injected?" (u/provides-web3?))
+    (if (u/provides-web3?)
+      (let [new-db (if-not (:web3 db) (assoc db :web3 (aget js/window "web3")) db)]
+        {:db new-db
+         :dispatch [:district0x/my-addresses-loaded (web3-eth/accounts (:web3 new-db))]})
+      (if (:load-node-addresses? db)
+        {:web3-fx.blockchain/fns
+         {:web3 (:web3 db)
+          :fns [[web3-eth/accounts
+                 [:district0x/my-addresses-loaded]
+                 [:district0x/blockchain-connection-error :initialize]]]}}
+        {:dispatch [:district0x/my-addresses-loaded []]}))))
+
+(reg-event-fx
   :load-ip-location
   interceptors
   (fn [{:keys [db]}]
