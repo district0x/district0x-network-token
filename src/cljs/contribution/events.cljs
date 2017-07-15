@@ -25,6 +25,25 @@
 (def interceptors district0x.events/interceptors)
 
 (reg-event-fx
+  :district0x/initialize
+  [interceptors (inject-cofx :localstorage)]
+  (fn [{:keys [localstorage]} [{:keys [:default-db :conversion-rates :effects]}]]
+    (let [db (district0x.events/initialize-db default-db localstorage)]
+      (merge
+        {:db db
+         :ga/page-view [(u/current-location-hash)]
+         :window/on-resize {:dispatch [:district0x.window/resized]
+                            :resize-interval 166}
+         ;; On slowed computers injection may not yet happened, so we'll give it some time, just in case
+         :dispatch-later [{:ms (if (u/provides-web3?) 0 6000) :dispatch [:district0x/load-my-addresses]}]}
+        (when conversion-rates
+          {:district0x/dispatch-n [[:district0x/load-conversion-rates (:currencies conversion-rates)]]
+           :dispatch-interval {:dispatch [:district0x/load-conversion-rates (:currencies conversion-rates)]
+                               :ms (or (:ms conversion-rates) 60000)
+                               :db-path [:district0x/load-conversion-rates-interval]}})
+        effects))))
+
+(reg-event-fx
   :load-ip-location
   interceptors
   (fn [{:keys [db]}]

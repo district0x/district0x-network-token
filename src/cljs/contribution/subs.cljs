@@ -1,12 +1,13 @@
 (ns contribution.subs
   (:require
+    [cljs-time.core :as t]
     [cljs-web3.core :as web3]
     [contribution.constants :as constants]
+    [district0x.utils :as u]
     [goog.string :as gstring]
     [goog.string.format]
     [medley.core :as medley]
-    [re-frame.core :refer [reg-sub]]
-    [cljs-time.core :as t]))
+    [re-frame.core :refer [reg-sub]]))
 
 (reg-sub
   :db/now
@@ -94,7 +95,9 @@
   :<- [:district0x/active-address]
   :<- [:contribution/configuration]
   (fn [[active-address {:keys [:contribution/founder1 :contribution/founder2]}]]
-    (contains? #{founder1 founder2} active-address)))
+    (and
+      active-address
+      (contains? #{founder1 founder2} active-address))))
 
 (reg-sub
   :form.contribution/enable-contrib-period
