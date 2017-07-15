@@ -2,7 +2,7 @@
   (:require
     [cljs-time.core :as t]
     [cljs-web3.core :as web3]
-    [cljs.spec :as s]
+    [cljs.spec.alpha :as s]
     [district0x.db]
     [district0x.utils :as u]
     [re-frame.core :refer [dispatch]]))

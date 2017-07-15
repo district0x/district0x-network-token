@@ -1,7 +1,7 @@
 (ns contribution.core
   (:require
     [cljs-time.extend]
-    [cljs.spec :as s]
+    [cljs.spec.alpha :as s]
     [cljsjs.material-ui]
     [cljsjs.react-flexbox-grid]
     [cljsjs.web3]
