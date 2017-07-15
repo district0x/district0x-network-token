@@ -47,7 +47,7 @@
   :district0x/load-my-addresses
   interceptors
   (fn [{:keys [db]}]
-    (println "web3 injected?" (u/provides-web3?))
+    (.log js/console "web3 injected?" (u/provides-web3?))
     (if (u/provides-web3?)
       (let [new-db (if-not (:web3 db) (assoc db :web3 (aget js/window "web3")) db)]
         {:db new-db
