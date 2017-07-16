@@ -25,42 +25,6 @@
 (def interceptors district0x.events/interceptors)
 
 (reg-event-fx
-  :district0x/initialize
-  [interceptors (inject-cofx :localstorage)]
-  (fn [{:keys [localstorage]} [{:keys [:default-db :conversion-rates :effects]}]]
-    (let [db (district0x.events/initialize-db default-db localstorage)]
-      (merge
-        {:db db
-         :ga/page-view [(u/current-location-hash)]
-         :window/on-resize {:dispatch [:district0x.window/resized]
-                            :resize-interval 166}
-         ;; On slowed computers injection may not yet happened, so we'll give it some time, just in case
-         :dispatch-later [{:ms (if (u/provides-web3?) 0 6000) :dispatch [:district0x/load-my-addresses]}]}
-        (when conversion-rates
-          {:district0x/dispatch-n [[:district0x/load-conversion-rates (:currencies conversion-rates)]]
-           :dispatch-interval {:dispatch [:district0x/load-conversion-rates (:currencies conversion-rates)]
-                               :ms (or (:ms conversion-rates) 60000)
-                               :db-path [:district0x/load-conversion-rates-interval]}})
-        effects))))
-
-(reg-event-fx
-  :district0x/load-my-addresses
-  interceptors
-  (fn [{:keys [db]}]
-    (.log js/console "web3 injected?" (u/provides-web3?))
-    (if (u/provides-web3?)
-      (let [new-db (if-not (:web3 db) (assoc db :web3 (aget js/window "web3")) db)]
-        {:db new-db
-         :dispatch [:district0x/my-addresses-loaded (web3-eth/accounts (:web3 new-db))]})
-      (if (:load-node-addresses? db)
-        {:web3-fx.blockchain/fns
-         {:web3 (:web3 db)
-          :fns [[web3-eth/accounts
-                 [:district0x/my-addresses-loaded]
-                 [:district0x/blockchain-connection-error :initialize]]]}}
-        {:dispatch [:district0x/my-addresses-loaded []]}))))
-
-(reg-event-fx
   :load-ip-location
   interceptors
   (fn [{:keys [db]}]
