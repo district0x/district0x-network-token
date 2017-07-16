@@ -22,8 +22,7 @@ contract Ownable {
     address public newOwner;
 
     /// @notice `owner` can step down and assign some other address to this role
-    /// @param _newOwner The address of the new owner. 0x0 can be used to create
-    ///  an unowned neutral vault, however that cannot be undone
+    /// @param _newOwner The address of the new owner.
     function changeOwner(address _newOwner) onlyOwner {
         newOwner = _newOwner;
     }

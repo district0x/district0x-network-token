@@ -424,7 +424,7 @@
               [:div
                {:style (merge styles/full-width)}
                "For detailed instructions watch our "
-               [external-link "tutorials on Youtube" "https://youtube.com"]]]
+               [external-link "tutorials on Youtube" "https://www.youtube.com/channel/UCQq0INymkcGDYYXeFZgYk4g"]]]
              [:div
               {:style styles/full-width}
               [:h2
