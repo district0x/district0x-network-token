@@ -24,33 +24,6 @@
 
 (def interceptors district0x.events/interceptors)
 
-(enable-console-print!)
-
-(reg-event-fx
-  :district0x/load-my-addresses
-  interceptors
-  (fn [{:keys [db]}]
-    (.log js/console (u/provides-web3?))
-    (merge
-      (when (and (not (:web3 db))
-                 (u/provides-web3?))
-        {:db (assoc db :web3 (aget js/window "web3"))})
-      (if (or (:load-node-addresses? db)
-              (u/provides-web3?))
-        {:web3-fx.blockchain/fns
-         {:web3 (:web3 db)
-          :fns [[web3-eth/accounts
-                 [:district0x/my-addresses-loaded1]
-                 [:district0x/blockchain-connection-error :initialize]]]}}
-        {:dispatch [:district0x/my-addresses-loaded1 []]}))))
-
-(reg-event-fx
-  :district0x/my-addresses-loaded1
-  interceptors
-  (fn [{:keys [db]} args]
-    (println args)
-    {:dispatch (vec (concat [:district0x/my-addresses-loaded] args))}))
-
 (reg-event-fx
   :load-ip-location
   interceptors
