@@ -24,6 +24,8 @@
 
 (def interceptors district0x.events/interceptors)
 
+(enable-console-print!)
+
 (reg-event-fx
   :district0x/load-my-addresses
   interceptors
