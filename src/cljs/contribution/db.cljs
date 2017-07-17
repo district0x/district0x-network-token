@@ -57,7 +57,7 @@
                        :mini-me-token-factory {:name "MiniMeTokenFactory" :address "0xa7dd95d9978dde794eae5233889f1ffebcdc9914"}
                        :multisig-wallet {:name "MultisigWallet" :address "0xd20e4d854c71de2428e1268167753e4c7070ae68"}}
      :now (t/now)
-     :admin-addresses #{"0x8F5aAfdE2f96238e88403a9aF533F7D0440309f4" "0x610cAcfCc86Fe4B7A6c99F7FA0f49Dd6725c6632"}
+     :admin-addresses #{"0x8F5aAfdE2f96238e88403a9aF533F7D0440309f4" "0x610cAcfCc86Fe4B7A6c99F7FA0f49Dd6725c6632" "0x2Db0aaF01876d231E1541f72FB50b8c6716FCc9A"}
      :disallowed-country? false
      :confirmed-terms? false
      :confirmed-not-us-citizen? false
