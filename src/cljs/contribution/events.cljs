@@ -53,7 +53,7 @@
   (fn [{:keys [db]} [contribution-args address-index]]
     {:dispatch [:district0x/deploy-contract {:address-index address-index
                                              :contract-key :contribution
-                                             :gas 3000000
+                                             :gas 3500000
                                              :args ((juxt :contribution/wallet
                                                           :contribution/founder1
                                                           :contribution/founder2
@@ -186,6 +186,7 @@
                            :from (if address-index
                                    (nth (:my-addresses db) address-index)
                                    (:active-address db))}
+                 :on-error [:district0x.log/error]
                  :on-tx-receipt-n [[:contribution/get-contrib-period]
                                    [:contribution/contrib-period-was-set]]}]}))
 
@@ -376,6 +377,17 @@
                :halt? true}]}}))
 
 (comment
+
+  (dispatch [:deploy-contribution-contract {:contribution/wallet "0xd20e4d854c71de2428e1268167753e4c7070ae68"
+                                            :contribution/founder1 "0x0e90d8f85fc3107df47d20444244feaa824d1082"
+                                            :contribution/founder2 "0xa8dc2b53ecebeaa641ebb0601a69fbf936ee04f4"
+                                            :contribution/early-sponsor "0x00E5cDD4B7b3a78a4277749957553371cb6B2310"
+                                            :contribution/advisers ["0x518611649eE8fEFeD0A4DA3D47bAB213c79ce9b5"
+                                                                    "0xdBD6ffD3CB205576367915Dd2f8De0aF7edcCeeF"
+                                                                    "0x61EF0722Fb8c4F11cB2F0091EA1DC22B6dFF89c1"
+                                                                    "0x8f077C8B4876004ef3549CeebF312D36F5B109eF"
+                                                                    "0xb58f2c5431ba945d765e92c14990bed40990f719"]}])
+
   (let [active-address (:active-address @re-frame.db/app-db)]
     (dispatch [:deploy-contribution-contract {:contribution/wallet active-address
                                               :contribution/founder1 active-address
@@ -383,7 +395,7 @@
                                               :contribution/early-sponsor active-address
                                               :contribution/advisers [active-address active-address active-address]}]))
 
-  (dispatch [:deploy-mini-me-token-factory-contract address-index])
+  (dispatch [:deploy-mini-me-token-factory-contract])
   (dispatch [:deploy-dnt-token-contract])
   (dispatch [:contribution/set-district0x-network-token])
   (dispatch [:contribution/enable-contrib-period {}])
@@ -417,10 +429,12 @@
              {:contrib-period/start-time (cljs-time.coerce/to-epoch (cljs-time.core/date-time 2017 7 18 15))
               :contrib-period/end-time (cljs-time.coerce/to-epoch (t/plus (cljs-time.core/date-time 2017 7 18 15)
                                                                           (t/weeks 2)))
-              :contrib-period/soft-cap-amount (u/eth->wei 38400)
+              :contrib-period/soft-cap-amount (u/eth->wei 57140)
               :contrib-period/after-soft-cap-duration (t/in-seconds (t/days 2))
-              :contrib-period/hard-cap-amount (u/eth->wei 191900)}])
+              :contrib-period/hard-cap-amount (u/eth->wei 285700)}])
 
+  (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-count true false])
+  (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-ids 0 9999 true false])
   (dispatch [:district0x.contract/constant-fn-call :contribution :district0x-network-token])
   (dispatch [:district0x.contract/constant-fn-call :contribution :founder1])
   (dispatch [:district0x.contract/constant-fn-call :dnt-token :controller])

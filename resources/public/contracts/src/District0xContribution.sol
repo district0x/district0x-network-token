@@ -34,12 +34,12 @@ contract District0xContribution is Pausable, HasNoTokens, TokenController {
     address public earlySponsor;                                        // Wallet of early sponsor
     address[] public advisers;                                          // 4 Wallets of advisors
 
-    uint public constant FOUNDER1_STAKE = 120000000 ether;              // 120M DNT
-    uint public constant FOUNDER2_STAKE = 80000000 ether;               // 80M  DNT
+    uint public constant FOUNDER1_STAKE = 119000000 ether;              // 119M DNT
+    uint public constant FOUNDER2_STAKE = 79000000 ether;               // 79M  DNT
     uint public constant EARLY_CONTRIBUTOR_STAKE = 5000000 ether;       // 5M   DNT
     uint public constant ADVISER_STAKE = 5000000 ether;                 // 5M   DNT
     uint public constant ADVISER_STAKE2 = 1000000 ether;                // 1M   DNT
-    uint public constant COMMUNITY_ADVISERS_STAKE = 3000000 ether;      // 3M   DNT
+    uint public constant COMMUNITY_ADVISERS_STAKE = 5000000 ether;      // 5M   DNT
     uint public constant CONTRIB_PERIOD1_STAKE = 600000000 ether;       // 600M DNT
     uint public constant CONTRIB_PERIOD2_STAKE = 140000000 ether;       // 140M DNT
     uint public constant CONTRIB_PERIOD3_STAKE = 40000000 ether;        // 40M  DNT

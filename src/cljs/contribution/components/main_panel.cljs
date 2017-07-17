@@ -66,7 +66,7 @@
        (rest children))]))
 
 (defn admin-panel []
-  (let [active-address-founder? (subscribe [:db/active-address-founder?])
+  (let [can-see-admin-panel? (subscribe [:db/can-see-admin-panel?])
         contrib-period (subscribe [:contribution/contrib-period])
         enable-contrib-form (subscribe [:form.contribution/enable-contrib-period])
         contrib-config (subscribe [:contribution/configuration])
@@ -82,7 +82,7 @@
             {:keys [:contribution/stopped? :contribution/founder1 :contribution/founder2
                     :contribution/early-sponsor :contribution/wallet :contribution/advisers
                     :contribution-address dnt-token-address :dnt-token/transfers-enabled?]} @contrib-config]
-        (when @active-address-founder?
+        (when @can-see-admin-panel?
           [paper
            [row-with-cols
             [col
@@ -102,7 +102,8 @@
              (for [[i adviser] (medley/indexed advisers)]
                [info-line
                 {:key i}
-                (str "Adviser " (inc i) ":") [etherscan-link {:address adviser}]])]
+                (str (when (= adviser (last advisers)) "Community ")
+                     "Adviser " (inc i) ":") [etherscan-link {:address adviser}]])]
             (when total-contributed
               [col
                {:xs 12}
@@ -110,7 +111,7 @@
                [info-line "Start Time:" (u/format-local-datetime start-time)]
                [info-line "End Time:" (u/format-local-datetime end-time)]
                [info-line "Soft Cap:" (u/format-eth-with-symbol soft-cap-amount)]
-               [info-line "After Soft Cap Duration:" (t/in-hours (t/millis after-soft-cap-duration)) " hours"]
+               [info-line "After Soft Cap Duration:" (t/in-hours (t/seconds after-soft-cap-duration)) " hours"]
                [info-line "Hard Cap:" (u/format-eth-with-symbol hard-cap-amount)]
                [info-line "Enabled?" (u/bool->yes|no enabled?)]
                [info-line "Token Distribution:" (u/format-dnt-with-symbol stake)]
@@ -356,7 +357,12 @@
                [:b
                 "Important: Maximum allowed gas price is " (web3/from-wei max-gas-price :gwei) " Gwei "
                 "(" max-gas-price " wei)." [:br]
-                "Recommended gas limit is 200000"]]
+                "Recommended gas limit is 200000" [:br]
+                (if stopped?
+                  "Contribution was temporarily paused due to emergency"
+                  ({:contrib-period-status/not-started "Contribution period has not started yet"
+                    :contrib-period-status/ended "Contribution period has been finished"}
+                    @contrib-period-status))]]
               [:div
                {:style styles/full-width}
                "You can send Ether directly to contribution smart contract at"]
@@ -367,16 +373,6 @@
                                :font-family "filson-soft, sans-serif"})}
                "district.eth" [:br]
                [:span {:style {:font-size "0.7em"}} @contribution-address]]
-              [:div
-               {:style (merge styles/full-width
-                              {:color styles/theme-orange
-                               :font-size "0.9em"})}
-               (when enabled?
-                 (if stopped?
-                   "(Contribution was temporarily paused due to emergency)"
-                   ({:contrib-period-status/not-started "(Contribution period has not started yet)"
-                     :contrib-period-status/ended "(Contribution period has been finished)"}
-                     @contrib-period-status)))]
               [:div
                {:style (merge styles/full-width
                               styles/margin-top-gutter-less)}

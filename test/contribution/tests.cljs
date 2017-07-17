@@ -194,14 +194,14 @@
             (is (zero? (:contrib-period/total-contributed contrib-period)))
             (is (zero? (:contrib-period/contributors-count contrib-period))))
 
-          (is (= 120000000 (<! (get-dnt-balance founder1))))
-          (is (= 80000000 (<! (get-dnt-balance founder2))))
+          (is (= 119000000 (<! (get-dnt-balance founder1))))
+          (is (= 79000000 (<! (get-dnt-balance founder2))))
           (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
           (is (= 5000000 (<! (get-dnt-balance adviser1))))
           (is (= 5000000 (<! (get-dnt-balance adviser2))))
           (is (= 1000000 (<! (get-dnt-balance adviser3))))
           (is (= 1000000 (<! (get-dnt-balance adviser4))))
-          (is (= 3000000 (<! (get-dnt-balance community-advisors))))
+          (is (= 5000000 (<! (get-dnt-balance community-advisors))))
           (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address")))))
 
           (testing "Shouldn't be able to reclaim DNT tokens"
@@ -238,14 +238,14 @@
               (is (zero? (:contrib-period/total-contributed contrib-period)))
               (is (zero? (:contrib-period/contributors-count contrib-period))))
 
-            (is (= 120000000 (<! (get-dnt-balance founder1))))
-            (is (= 80000000 (<! (get-dnt-balance founder2))))
+            (is (= 119000000 (<! (get-dnt-balance founder1))))
+            (is (= 79000000 (<! (get-dnt-balance founder2))))
             (is (= 5000000 (<! (get-dnt-balance early-sponsor))))
             (is (= 5000000 (<! (get-dnt-balance adviser1))))
             (is (= 5000000 (<! (get-dnt-balance adviser2))))
             (is (= 1000000 (<! (get-dnt-balance adviser3))))
             (is (= 1000000 (<! (get-dnt-balance adviser4))))
-            (is (= 3000000 (<! (get-dnt-balance community-advisors))))
+            (is (= 5000000 (<! (get-dnt-balance community-advisors))))
             (is (= 600000000 (<! (get-dnt-balance (aget Contribution "address"))))))
 
           (testing "Only one owner shouldn't be able to enable contribution period"

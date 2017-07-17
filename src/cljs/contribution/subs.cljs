@@ -7,7 +7,9 @@
     [goog.string :as gstring]
     [goog.string.format]
     [medley.core :as medley]
-    [re-frame.core :refer [reg-sub]]))
+    [re-frame.core :refer [reg-sub]]
+    [clojure.set :as set]
+    [clojure.string :as string]))
 
 (reg-sub
   :db/now
@@ -57,6 +59,11 @@
     (:disallowed-country? db)))
 
 (reg-sub
+  :admin-addresses
+  (fn [db]
+    (:admin-addresses db)))
+
+(reg-sub
   :contribution/current-contrib-period-status
   :<- [:contribution/contrib-period]
   :<- [:db/now]
@@ -91,13 +98,12 @@
     (get-in contracts [:contribution :address])))
 
 (reg-sub
-  :db/active-address-founder?
-  :<- [:district0x/active-address]
-  :<- [:contribution/configuration]
-  (fn [[active-address {:keys [:contribution/founder1 :contribution/founder2]}]]
-    (and
-      active-address
-      (contains? #{founder1 founder2} active-address))))
+  :db/can-see-admin-panel?
+  :<- [:district0x/my-addresses]
+  :<- [:admin-addresses]
+  (fn [[my-addresses admin-addresses]]
+    (boolean (seq (set/intersection (set (map string/lower-case my-addresses))
+                                    (set (map string/lower-case admin-addresses)))))))
 
 (reg-sub
   :form.contribution/enable-contrib-period
