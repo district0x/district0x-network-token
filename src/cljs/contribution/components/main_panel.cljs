@@ -468,13 +468,13 @@
              "Please note: " (u/format-eth stake) " DNT tokens will be divided and distributed amongst all
             participants " [:b "after the contribution period ends"] ". Each participant will receive an allocation
             proportional to the amount they contributed, relative to the total collected."]
-            #_[:div
-               {:style (merge styles/full-width
-                              styles/margin-top-gutter)}
-               [:a {:href "#"
-                    :target :_blank
-                    :style styles/contrib-terms-link}
-                "Contribution Terms"]]])
+            [:div
+             {:style (merge styles/full-width
+                            styles/margin-top-gutter)}
+             [:a {:href "https://district0x.io/docs/district0x-ico-terms.pdf"
+                  :target :_blank
+                  :style styles/contrib-terms-link}
+              "Contribution Terms"]]])
          [:small
           {:style (merge styles/full-width
                          styles/fade-white-text
