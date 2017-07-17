@@ -471,7 +471,7 @@
             [:div
              {:style (merge styles/full-width
                             styles/margin-top-gutter)}
-             [:a {:href "https://district0x.io/docs/district0x-ico-terms.pdf"
+             [:a {:href "https://district0x.io/docs/district0x-terms.pdf"
                   :target :_blank
                   :style styles/contrib-terms-link}
               "Contribution Terms"]]])
