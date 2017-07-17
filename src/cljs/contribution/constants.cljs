@@ -1,6 +1,6 @@
 (ns contribution.constants)
 
-(def contracts-version "1.0.0")
+(def contracts-version "1.0.1")
 
 (def current-contrib-period 0)
 
