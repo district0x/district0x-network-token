@@ -240,8 +240,7 @@
                  :value (u/num->wei (:contribution/amount form-data))
                  :fn-key :contribution/contribute
                  :fn-args []
-                 :tx-opts {:gas 200000
-                           :gas-price (:contribution/max-gas-price db)}
+                 :tx-opts {:gas-price (:contribution/max-gas-price db)}
                  :form-key :form.contribution/contribute
                  :on-tx-receipt [:district0x.snackbar/show-message "Thank you! Your contribution was successfully sent"]}]}))
 
@@ -429,9 +428,9 @@
              {:contrib-period/start-time (cljs-time.coerce/to-epoch (cljs-time.core/date-time 2017 7 18 15))
               :contrib-period/end-time (cljs-time.coerce/to-epoch (t/plus (cljs-time.core/date-time 2017 7 18 15)
                                                                           (t/weeks 2)))
-              :contrib-period/soft-cap-amount (u/eth->wei 57140)
+              :contrib-period/soft-cap-amount (u/eth->wei 58550)
               :contrib-period/after-soft-cap-duration (t/in-seconds (t/days 2))
-              :contrib-period/hard-cap-amount (u/eth->wei 285700)}])
+              :contrib-period/hard-cap-amount (u/eth->wei 292750)}])
 
   (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-count true false])
   (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-ids 0 9999 true false])
