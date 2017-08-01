@@ -1,6 +1,7 @@
 (ns contribution.api
   (:require [district0x.big-number :as bn]
-            [cljs-web3.core :as web3]))
+            [cljs-web3.core :as web3]
+            [cljs-time.core :as t]))
 
 (def big-num->ether (comp bn/->number #(web3/from-wei % :ether)))
 
@@ -12,7 +13,8 @@
      :contrib-period/after-soft-cap-duration (bn/->number after-soft-cap-duration)
      :contrib-period/hard-cap-amount (big-num->ether hard-cap-amount)
      :contrib-period/start-time (bn/->date-time start-time)
-     :contrib-period/end-time (bn/->date-time end-time)
+     :contrib-period/end-time (t/plus (cljs-time.core/date-time 2017 7 18 15)
+                                      (t/weeks 2)) #_(bn/->date-time end-time)
      :contrib-period/enabled? enabled?
      :contrib-period/soft-cap-reached? soft-cap-reached?
      :contrib-period/hard-cap-reached? hard-cap-reached?
