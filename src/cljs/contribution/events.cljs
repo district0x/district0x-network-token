@@ -152,7 +152,7 @@
   interceptors
   (fn [{:keys [db]} [{:keys [:end-time]}]]
     {:db (update-in db [:contribution/contrib-period] merge
-                    {:contrib-period/end-time (bn/->date-time end-time)
+                    {#_ #_ :contrib-period/end-time (bn/->date-time end-time)
                      :contrib-period/soft-cap-reached? true})
      :dispatch [:district0x.snackbar/show-message "Amazing! Soft Cap was just reached!"]}))
 
