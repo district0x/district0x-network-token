@@ -2,25 +2,30 @@
   (:require
     [ajax.core :as ajax]
     [akiroz.re-frame.storage :as re-frame-storage]
+    [camel-snake-kebab.core :as cs :include-macros true]
+    [camel-snake-kebab.extras :refer [transform-keys]]
     [cljs-time.coerce :as time-coerce]
     [cljs-time.core :as t]
+    [cljs-web3.async.eth :as web3-eth-async]
     [cljs-web3.core :as web3]
     [cljs-web3.eth :as web3-eth]
     [cljs-web3.personal :as web3-personal]
     [cljs-web3.utils :as web3-utils]
+    [cljs.core.async :refer [<! >! chan alts! timeout close!]]
     [cljs.spec.alpha :as s]
     [clojure.data :as data]
     [clojure.set :as set]
     [clojure.string :as string]
-    [contribution.constants :as constants]
     [contribution.api :refer [parse-get-contrib-period contrib-period-args parse-get-configuration]]
+    [contribution.constants :as constants]
     [district0x.big-number :as bn]
     [district0x.events :refer [get-contract get-instance all-contracts-loaded? reg-empty-event-fx]]
     [district0x.utils :as u]
     [goog.string :as gstring]
     [goog.string.format]
     [medley.core :as medley]
-    [re-frame.core :as re-frame :refer [reg-event-db reg-event-fx inject-cofx path trim-v after debug reg-fx console dispatch]]))
+    [re-frame.core :as re-frame :refer [reg-event-db reg-event-fx inject-cofx path trim-v after debug reg-fx console dispatch]])
+  (:require-macros [cljs.core.async.macros :refer [go]]))
 
 (def interceptors district0x.events/interceptors)
 
@@ -87,7 +92,30 @@
                                                :args [contribution-address mini-me-token-factory-address]
                                                :on-success [:dnt-token-contract-deployed]}]})))
 
-(reg-empty-event-fx :dnt-token-contract-deployed)
+
+(reg-event-fx
+  :deploy-token-vesting-contract
+  interceptors
+  (fn [{:keys [db]} [{:keys [:beneficiary :start :cliff :duration :revocable?]}]]
+    {:dispatch [:district0x/deploy-contract {:address-index 0
+                                             :contract-key :token-vesting
+                                             :gas 3300000
+                                             :args [beneficiary
+                                                    (or start (time-coerce/to-epoch (t/now)))
+                                                    cliff
+                                                    duration
+                                                    revocable?]
+                                             :on-success [:dnt-token-contract-deployed]}]}))
+
+
+(comment
+  (re-frame.core/dispatch [:deploy-token-vesting-contract
+                           {:beneficiary ""
+                            :cliff 0
+                            :duration (t/in-seconds (t/days (* 365 2)))
+                            :revocable? true}]))
+
+(reg-empty-event-fx :token-vesting-contract-deployed)
 
 (reg-event-fx
   :deploy-multisig-wallet
@@ -152,7 +180,7 @@
   interceptors
   (fn [{:keys [db]} [{:keys [:end-time]}]]
     {:db (update-in db [:contribution/contrib-period] merge
-                    {#_ #_ :contrib-period/end-time (bn/->date-time end-time)
+                    {#_#_:contrib-period/end-time (bn/->date-time end-time)
                      :contrib-period/soft-cap-reached? true})
      :dispatch [:district0x.snackbar/show-message "Amazing! Soft Cap was just reached!"]}))
 
@@ -263,6 +291,7 @@
   (fn [{:keys [db]}]
     {:dispatch [:district0x.contract/state-fn-call {:contract-key :contribution
                                                     :method :emergency-stop
+                                                    :args []
                                                     :tx-opts {:gas 200000}}]}))
 
 (reg-event-fx
@@ -271,6 +300,7 @@
   (fn [{:keys [db]}]
     {:dispatch [:district0x.contract/state-fn-call {:contract-key :contribution
                                                     :method :release
+                                                    :args []
                                                     :tx-opts {:gas 200000}}]}))
 
 (reg-event-fx
@@ -280,7 +310,17 @@
     {:dispatch [:district0x.contract/state-fn-call {:contract-key :contribution
                                                     :method :compensate-contributors
                                                     :args [offset limit]
-                                                    :tx-opts {:gas 3500000}}]}))
+                                                    :tx-opts {:gas 3500000
+                                                              :gas-price (web3/to-wei 4 :gwei)}
+                                                    :on-tx-receipt [:contribution/compensate-contributors-success offset limit]
+                                                    :on-error [:district0x.log/error offset (+ offset limit)]}]}))
+
+(reg-event-fx
+  :contribution/compensate-contributors-success
+  interceptors
+  (fn [{:keys [db]} [offset limit]]
+    (println "Successfully compensated" offset (+ offset limit))
+    nil))
 
 (reg-event-fx
   :contribution/enable-district0x-network-token-transfers
@@ -375,6 +415,70 @@
                :dispatch [:contribution/enable-contrib-period {} (first (:my-addresses db))]
                :halt? true}]}}))
 
+(reg-event-fx
+  :compensate-community-advisor
+  interceptors
+  (fn [{:keys [db]} [i]]
+    (when (< i (count constants/community-advisors))
+      (let [[receiver amount] (nth constants/community-advisors i)]
+        (println "Sending" amount "DNT to" receiver i)
+        {:dispatch [:dnt-token/transfer {:dnt-token/to receiver
+                                         :dnt-token/value (web3/to-wei amount :ether)}]
+         :dispatch-later [{:ms 1000 :dispatch [:compensate-community-advisor (inc i)]}]}))))
+
+
+(reg-event-fx
+  :community-advisor-balances
+  interceptors
+  (fn [{:keys [db]}]
+    {:web3-fx.blockchain/balances
+     {:web3 (:web3 db)
+      :addresses (map first (take 270 constants/community-advisors))
+      :instance (get-instance db :dnt-token)
+      :dispatches [[:community-advisor-balances-loaded]
+                   [:district0x/blockchain-connection-error :community-advisor-balances]]}}))
+
+(reg-event-fx
+  :community-advisor-balances-loaded
+  interceptors
+  (fn [{:keys [db]} [balance address]]
+    (let [balance (bn/->number (web3/from-wei balance :ether))
+          expected-balance (constants/community-advisors-hashmap address)]
+      (when (not= balance expected-balance)
+        (console :log address balance expected-balance)))
+    nil))
+
+(defn compensate-community-advisor [i stop-at]
+  (when (< i (min stop-at (count constants/community-advisors-hashmap)))
+    (let [address (nth (keys constants/community-advisors-hashmap) i)]
+      (go
+        (let [[result ch] (alts! [(web3-eth-async/contract-call
+                                    (get-instance @re-frame.db/app-db :dnt-token)
+                                    :Transfer
+                                    {:_from "0x2a2A57a98a07D3CA5a46A0e1d51dEFffBeF54E4F"
+                                     :_to address}
+                                    {:from-block 0})
+                                  (timeout 1000)])]
+          (if result
+            (do
+              (println address "was compensated" i)
+              (compensate-community-advisor (inc i) stop-at))
+            (let [amount (constants/community-advisors-hashmap address)]
+              (println "Sending" amount "to" address i)
+              (close! ch)
+              (let [[err res] (<! (web3-eth-async/contract-call
+                                    (get-instance @re-frame.db/app-db :dnt-token)
+                                    :transfer
+                                    address
+                                    (web3/to-wei amount :ether)
+                                    {:gas 200000
+                                     :gas-price (web3/to-wei 4 :gwei)
+                                     :from "0x2a2A57a98a07D3CA5a46A0e1d51dEFffBeF54E4F"}))]
+                (if err
+                  (println err)
+                  (compensate-community-advisor (inc i) stop-at))))))))))
+
+
 (comment
 
   (dispatch [:deploy-contribution-contract {:contribution/wallet "0xd20e4d854c71de2428e1268167753e4c7070ae68"
@@ -432,6 +536,13 @@
               :contrib-period/after-soft-cap-duration (t/in-seconds (t/days 2))
               :contrib-period/hard-cap-amount (u/eth->wei 292750)}])
 
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :beneficiary])
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :start])
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :cliff])
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :duration])
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :revocable])
+  (dispatch [:district0x.contract/constant-fn-call :token-vesting :owner])
+
   (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-count true false])
   (dispatch [:district0x.contract/constant-fn-call :multisig-wallet :get-transaction-ids 0 9999 true false])
   (dispatch [:district0x.contract/constant-fn-call :contribution :district0x-network-token])
@@ -441,6 +552,7 @@
   (dispatch [:district0x.contract/constant-fn-call :dnt-token :token-grant (:contribution/founder1 @re-frame.db/app-db) 1])
   (dispatch [:district0x.contract/constant-fn-call :contribution :get-running-contrib-period])
   (dispatch [:district0x.contract/constant-fn-call :contribution :get-times])
+  (dispatch [:district0x.contract/constant-fn-call :contribution :get-uncompensated-contributors 0 0])
   (dispatch [:contribution/enable-contrib-period {}
              (last (:my-addresses @re-frame.db/app-db))])
   )

@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[cljs-react-material-ui "0.2.44"]
-                 [cljs-web3 "0.19.0-0-2"]
+                 [cljs-web3 "0.19.0-0-5"]
                  [day8.re-frame/async-flow-fx "0.0.6"]
                  [district0x "0.1.19"]
                  [lein-doo "0.1.7"]

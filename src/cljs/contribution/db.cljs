@@ -55,7 +55,8 @@
      :smart-contracts {:contribution {:name "District0xContribution" :address "0xf8094e15c897518b5ac5287d7070ca5850efc6ff"}
                        :dnt-token {:name "District0xNetworkToken" :address "0x0abdace70d3790235af448c88547603b945604ea"}
                        :mini-me-token-factory {:name "MiniMeTokenFactory" :address "0xa7dd95d9978dde794eae5233889f1ffebcdc9914"}
-                       :multisig-wallet {:name "MultisigWallet" :address "0xd20e4d854c71de2428e1268167753e4c7070ae68"}}
+                       :multisig-wallet {:name "MultisigWallet" :address "0xd20e4d854c71de2428e1268167753e4c7070ae68"}
+                       :token-vesting {:name "TokenVesting" :address "0x7c715A0d3018e254CC6A1c699bc63aBBaAeA5B7e"}}
      :now (t/now)
      :admin-addresses #{"0x8F5aAfdE2f96238e88403a9aF533F7D0440309f4" "0x610cAcfCc86Fe4B7A6c99F7FA0f49Dd6725c6632" "0x2Db0aaF01876d231E1541f72FB50b8c6716FCc9A"}
      :disallowed-country? false
