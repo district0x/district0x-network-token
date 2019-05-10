@@ -73,7 +73,7 @@ images=(
 for i in "${images[@]}"; do
   (
     build $i $BUILD_ENV
-#    push $i
+    push $i
   )
 
 done # END: i loop

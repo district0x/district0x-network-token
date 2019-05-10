@@ -9,10 +9,10 @@ notifications:
     on_failure: always
     rooms:
     - district0x:53vhalUfg0MitsQwzjP5PWdd#travis-ci
-# before_install:
-# - sudo wget --no-check-certificate -P /bin https://github.com/ethereum/solidity/releases/download/v0.4.11/solc-static-linux
-# - sudo chmod a+x /bin/solc-static-linux
-# - sudo ln -s /bin/solc-static-linux /usr/bin/solc
+env:
+  global:
+  - secure: xt6stp9H+jVZuCdL2Hmc4AGv6N4rbooy9cLXPY7N7v6Q9QGnOtOV+mIZkGxI1P3OYE1m+fKW1lEAynxIkJgVOkNlp+JLF279PZaWYrmpHwueX33ElYd8BQelmlYev84jWT4OmFhinWWzfoQHoBTYTpc1bLp/xIlhrFrANLiB4wThq4t+cZcpk3srjcxFL8xS2V6sHzJzBxu637W5vYV7deuHR0pMZJfmxfL252zzMtZYYKxi+3NnFh1gTg8v+w0Whre7elNd7Obq9JypnMjWZRVQ7WnFKQFKZr09cQ3NhuGtA069/Cju9f70cZDnySRxegZ8EZFPhl9tOOjTcagque4eOuylLtRkop3DE4i0xBvptxrXystdPk1nexJimOeZYjukklVRULVRUsTOF7k5g1lriIszPYg+3bIvKRWVFFOrpq47Cud87horbj0Pij+wlmwCNFGkq1lfGMTIN7IUpAC0e3QTzyoBZyEcRn4hSWmbDUvq9C23ZAQuSVbEDcbkt6Xudoyl3O6egGVxRe4Wv552xMNmp57W/vUWhcotzqCyucXYlcQnimyVgy7jKlG7Jn61AyHT7hQMw0qAo99S2vhytJqt+LDrnWLACJ6MhaoKQSmGFvVN96sUXtcEwsmrXbCBol7uT7alP6kE7Hq/llk88e6Mvn4+ANDbUjCnnM0=
+  - secure: 3a07x1H5oEZ10CleLEVJuL/KPE1GVGRFY5MnoMdQ31kCbg+vlVaD9bFXs02Ipck4ELRABzWgM4pFNRlGlFE9GaUDrFEfmC90x8dSFVgATR9nTbkDI5mGUjPNlGQq5z9dvTmP11s/Le1/WS0WxJ0bvl8g3eevozsVcGcXuPsDf77Ghbfo7I5CttotEx+/i9vZZRfiLMMpm+5gRndjAEtqD2wGTrOyBlFfHwfRVR/XadUJIV7r1WxpCQbu4eXcLx95Sv09yBRujMM5xiCD4V50PPaDRbUZFwoCZcPuSzxSOW2pWYbGsesjTwaY/d/Y+nr8zHglcGx/jB7a949Ugk9zr12ttQsf51AfJZHNKHz4J/DCCDIDT+JOSjtGlAIAUvvhvUrfsPa5tHn0c/xJxBRCyFR0je+1TLKPHp0V1WlHIZWxfo2uDNZJf7HGG7fFOPueJNDry3+zVlsBZvXRN6MSE+MxcHBSZP5vTwv3OfVVMNt9Pg3ZkmpHK9x5Kx7xx67TW3d4WKB9HVwdYUm8JnFwJ1f/PzbTv77H27VJzO79Qpd1n2HSKQZiwkiTioxhUlu0b6xadPhHC6XTdgGHwzkCaxIR3ljg8+So3y3DVOMu8M5yXC+7Awwn2NmOWnPXK0cGX7HY1OZrKKtIp6E7gH/+M1mQxzaEuIlc5/YNsiqSMjM=
 services:
 - docker
 deploy:
