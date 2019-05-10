@@ -17,3 +17,7 @@ contribution.iml
 /test-fig-compiled/
 /test-compiled/
 /node_modules/
+package-lock.json
+package.json
+/tests/
+resources/public/css/
