@@ -33,7 +33,7 @@
 
   :source-paths ["src/cljs"]
 
-  :clean-targets ^{:protect false} ["resources/public/js/compiled" "target"]
+  :clean-targets ^{:protect false} ["resources/public/js/compiled" "resources/public/css" "target"]
 
   :figwheel {:server-port 6376}
 
@@ -76,22 +76,13 @@
                                                :closure-defines {goog.DEBUG false}
                                                :pretty-print false
                                                :pseudo-names false}}
-                                   {:id "test-fig"
+                                   {:id "tests"
                                     :source-paths ["src/cljs" "test"]
                                     :figwheel true
                                     :compiler {:main "contribution.cmd"
-                                               :output-to "test-fig-compiled/contribution-tests.js",
-                                               :output-dir "test-fig-compiled",
+                                               :output-to "tests/contribution-tests.js",
+                                               :output-dir "tests",
                                                :target :nodejs,
                                                :optimizations :none,
                                                :verbose true
-                                               :source-map true}}
-                                   {:id "test"
-                                    :source-paths ["src/cljs" "test"]
-                                    :compiler {:main "contribution.cmd"
-                                               :output-to "contribution-tests.js",
-                                               :output-dir "test-compiled",
-                                               :target :nodejs,
-                                               :optimizations :simple,
-                                               :verbose false
-                                               :source-map "contribution-tests.js.map" #_ true}}]}}})
+                                               :source-map true}}]}}})

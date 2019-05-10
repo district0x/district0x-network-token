@@ -1,5 +1,7 @@
 # district0x Network Token ![Join our slack](https://district0x-slack.herokuapp.com/badge.svg)
 
+[![Build Status](https://travis-ci.org/district0x/district0x-network-token.svg?branch=master)](https://travis-ci.org/district0x/district0x-network-token)
+
 <img src="resources/public/images/dnt-header.jpg"/>
 
 Read More:
