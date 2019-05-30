@@ -82,7 +82,7 @@ contract VestedToken is LimitedTransferToken, GrantsControlled {
   }
 
   /**
-   * @dev Revoke the grant of tokens of a specifed address.
+   * @dev Revoke the grant of tokens of a specified address.
    * @param _holder The address which will have its tokens revoked.
    * @param _grantId The id of the token grant.
    */
@@ -114,7 +114,7 @@ contract VestedToken is LimitedTransferToken, GrantsControlled {
   }
 
   /**
-   * @dev Revoke all grants of tokens of a specifed address.
+   * @dev Revoke all grants of tokens of a specified address.
    * @param _holder The address which will have its tokens revoked.
    */
     function revokeAllTokenGrants(address _holder) {
@@ -159,13 +159,13 @@ contract VestedToken is LimitedTransferToken, GrantsControlled {
   }
 
   /**
-   * @dev Calculate amount of vested tokens at a specifc time.
+   * @dev Calculate amount of vested tokens at a specific time.
    * @param tokens uint256 The amount of tokens grantted.
    * @param time uint64 The time to be checked
    * @param start uint64 A time representing the begining of the grant
    * @param cliff uint64 The cliff period.
    * @param vesting uint64 The vesting period.
-   * @return An uint representing the amount of vested tokensof a specif grant.
+   * @return An uint representing the amount of vested tokensof a specific grant.
    *  transferableTokens
    *   |                         _/--------   vestedTokens rect
    *   |                       _/
@@ -210,10 +210,10 @@ contract VestedToken is LimitedTransferToken, GrantsControlled {
   }
 
   /**
-   * @dev Get all information about a specifc grant.
+   * @dev Get all information about a specific grant.
    * @param _holder The address which will have its tokens revoked.
    * @param _grantId The id of the token grant.
-   * @return Returns all the values that represent a TokenGrant(address, value, start, cliff,
+   * @return Returns all the values that represents a TokenGrant(address, value, start, cliff,
    * revokability, burnsOnRevoke, and vesting) plus the vested value at the current time.
    */
   function tokenGrant(address _holder, uint _grantId) constant returns (address granter, uint256 value, uint256 vested, uint64 start, uint64 cliff, uint64 vesting, bool revokable, bool burnsOnRevoke) {
